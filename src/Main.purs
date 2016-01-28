@@ -27,7 +27,7 @@ import qualified DOM.Node.ParentNode as DOM
 
 import qualified React as R
 import qualified React.DOM as R
-import qualified React.DOM.Props as RP
+-- import qualified React.DOM.Props as RP
 
 type UserCommand = RPC.UserCommand String String String
 
@@ -41,7 +41,7 @@ data Action = NoOp
 type State = { session :: String, socket :: S.Socket }
 
 render :: T.Render State _ Action
-render dispatch _ state _ = [ R.div [] [] ]
+render dispatch _ state _ = [ R.div [] [ R.text "asdasd" ] ]
 
 performAction :: T.PerformAction _ State _ Action
 performAction = T.asyncOne' handler
@@ -56,7 +56,7 @@ spec = T.simpleSpec performAction render
 
 main :: forall e. Eff (dom :: DOM.DOM, websocket :: S.WebSocket, err :: EXCEPTION, console :: CONSOLE | e) Unit
 main = do
-  socket <- S.connect "ws://localhost:8000"
+  socket <- S.connect "ws://localhost:8538" false
     { connected : \_ -> return unit
     , disconnected : return unit
     , message : \_ -> return unit
