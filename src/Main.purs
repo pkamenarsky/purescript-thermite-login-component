@@ -62,6 +62,17 @@ main = do
     , message : \_ -> return unit
     }
 
+  runAff throwException (const (pure unit)) $ do
+    -- TODO: reopen connection on send
+    -- url <- sendSync socket (RPC.AuthFacebookUrl "" [])
+    user <- sendSync socket $ RPC.CreateUser (RPC.User
+      { u_name: "user"
+      , u_email: "email"
+      , u_password: RPC.PasswordHidden
+      , u_active: true
+      , u_more: "none" }) "SECRET!!!"
+    return unit
+
   let component = T.createClass spec { session : "", socket }
 
   document <- DOM.window >>= DOM.document
