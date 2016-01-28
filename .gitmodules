@@ -1,0 +1,3 @@
+[submodule "users-remote"]
+	path = users-remote
+	url = git@github.com:pkamenarsky/users-remote.git
