@@ -27,7 +27,9 @@ import qualified DOM.Node.ParentNode as DOM
 
 import qualified React as R
 import qualified React.DOM as R
--- import qualified React.DOM.Props as RP
+import qualified React.DOM.Props as RP
+
+import Unsafe.Coerce
 
 type UserCommand = RPC.UserCommand String String String
 
@@ -36,12 +38,29 @@ sendSync :: forall eff b. (FromJSON b) => S.Socket -> (R.Proxy b -> UserCommand)
 sendSync = R.sendSync
 
 -- Action
-data Action = NoOp
+data Action = NoOp | UsernameChanged String | PasswordChanged String | Login
 
-type State = { session :: String, socket :: S.Socket }
+type State =
+  { session :: String
+  , username :: String
+  , password :: String
+  , socket :: S.Socket
+  }
 
 render :: T.Render State _ Action
-render dispatch _ state _ = [ R.div [] [ R.text "asdasd" ] ]
+render dispatch _ state _ =
+  [ R.input
+    [ RP.onChange \e -> dispatch $ UsernameChanged ((unsafeCoerce e).target.value)
+    , RP.value state.username
+    ] []
+  , R.input
+    [ RP.onChange \e -> dispatch $ PasswordChanged ((unsafeCoerce e).target.value)
+    , RP.value state.password
+    ] []
+  , R.div
+    [ RP.onClick \_ -> dispatch Login ]
+    [ R.text "Login" ]
+  ]
 
 performAction :: T.PerformAction _ State _ Action
 performAction = T.asyncOne' handler
@@ -49,7 +68,14 @@ performAction = T.asyncOne' handler
     handler :: Action -> _ -> State -> Aff _ (State -> State)
     handler NoOp _ state = do
       url <- sendSync state.socket (RPC.AuthFacebookUrl "" [])
-      pure $ \x -> x
+      pure id
+    handler (UsernameChanged v) _ state = do
+      pure $ \s -> s { username = v }
+    handler (PasswordChanged v) _ state = do
+      pure $ \s -> s { password = v }
+    handler Login _ state = do
+      url <- sendSync state.socket (RPC.AuthFacebookUrl "" [])
+      pure id
 
 spec :: T.Spec _ State _ Action
 spec = T.simpleSpec performAction render
@@ -62,6 +88,7 @@ main = do
     , message : \_ -> return unit
     }
 
+  {-
   runAff throwException (const (pure unit)) $ do
     -- TODO: reopen connection on send
     -- url <- sendSync socket (RPC.AuthFacebookUrl "" [])
@@ -72,8 +99,9 @@ main = do
       , u_active: true
       , u_more: "none" }) "SECRET!!!"
     return unit
+  -}
 
-  let component = T.createClass spec { session : "", socket }
+  let component = T.createClass spec { session : "", username: "", password: "", socket }
 
   document <- DOM.window >>= DOM.document
   container <- fromJust <<< toMaybe <$> DOM.querySelector "#main" (DOM.htmlDocumentToParentNode document)
