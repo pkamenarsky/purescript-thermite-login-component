@@ -82,7 +82,7 @@ spec = T.simpleSpec performAction render
 
 main :: forall e. Eff (dom :: DOM.DOM, websocket :: S.WebSocket, err :: EXCEPTION, console :: CONSOLE | e) Unit
 main = do
-  socket <- S.connect "ws://localhost:8538" false
+  socket <- S.connect "ws://localhost:8538" true
     { connected : \_ -> return unit
     , disconnected : return unit
     , message : \_ -> return unit
