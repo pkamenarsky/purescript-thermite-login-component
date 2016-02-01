@@ -3,11 +3,14 @@ module Main where
 import Prelude
 
 import Data.Array (concat)
+import Data.Functor
 import Data.JSON
 import Data.Lens
 import Data.Maybe.Unsafe (fromJust)
 import Data.Nullable (toMaybe)
 
+import Control.Alt
+import Control.Apply
 import Control.Monad.Aff
 import Control.Monad.Eff
 import Control.Monad.Eff.Class
@@ -31,6 +34,10 @@ import DOM.Node.ParentNode as DOM
 import React as R
 import React.DOM as R
 import React.DOM.Props as RP
+
+import Routing
+import Routing.Match
+import Routing.Match.Class
 
 import Unsafe.Coerce
 
@@ -112,6 +119,10 @@ performAction = T.asyncOne' handler
 
 spec :: T.Spec _ State _ Action
 spec = T.simpleSpec performAction render
+
+route :: Match Screen
+route = LoginScreen <$ (lit "login")
+    -- <|> ResetPasswordScreen
 
 main :: forall e. Eff (dom :: DOM.DOM, websocket :: S.WebSocket, err :: EXCEPTION, console :: CONSOLE | e) Unit
 main = do
