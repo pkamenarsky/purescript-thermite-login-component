@@ -3,6 +3,7 @@ module Main where
 import Prelude
 
 import Data.Array (concat)
+import Data.Either
 import Data.Functor
 import Data.JSON
 import Data.Lens
@@ -36,6 +37,7 @@ import React.DOM as R
 import React.DOM.Props as RP
 
 import Routing
+import Routing.Hash (getHash)
 import Routing.Match
 import Routing.Match.Class
 
@@ -122,7 +124,8 @@ spec = T.simpleSpec performAction render
 
 route :: Match Screen
 route = LoginScreen <$ (lit "login")
-    -- <|> ResetPasswordScreen
+    <|> RegisterScreen <$ (lit "register")
+    <|> ResetPasswordScreen <$ (lit "reset-password")
 
 main :: forall e. Eff (dom :: DOM.DOM, websocket :: S.WebSocket, err :: EXCEPTION, console :: CONSOLE | e) Unit
 main = do
@@ -145,14 +148,21 @@ main = do
     return unit
   -}
 
-  runAff throwException (const (pure unit)) $ do
-    url <- sendSync socket (RPC.AuthFacebookUrl "" [])
+  match <- matchHash route <$> getHash
 
-    liftEff $ do
-      let component = T.createClass spec (emptyState socket url)
+  case match of
+    Right screen -> do
+      runAff throwException (const (pure unit)) $ do
+        url <- sendSync socket (RPC.AuthFacebookUrl "" [])
 
-      document <- DOM.window >>= DOM.document
-      container <- fromJust <<< toMaybe <$> DOM.querySelector "#main" (DOM.htmlDocumentToParentNode document)
+        liftEff $ do
+          let component = T.createClass spec $ (emptyState socket url) { screen = screen }
+              factory = R.createFactory component {}
 
-      R.render (R.createFactory component {}) container
-      return unit
+          R.writeState factory (emptyState socket url)
+          document <- DOM.window >>= DOM.document
+          container <- fromJust <<< toMaybe <$> DOM.querySelector "#main" (DOM.htmlDocumentToParentNode document)
+
+          R.render factory container
+          return unit
+    _ -> return unit
