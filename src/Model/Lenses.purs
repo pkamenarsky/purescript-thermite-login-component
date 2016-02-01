@@ -6,16 +6,22 @@ import Data.Either (Either(..))
 import Model
 
 
-_NoOp :: PrismP Action Unit
-_NoOp = prism (const NoOp) unwrap
-  where
-  unwrap NoOp = Right unit
-  unwrap y = Left y
-
 _Login :: PrismP Action Unit
 _Login = prism (const Login) unwrap
   where
   unwrap Login = Right unit
+  unwrap y = Left y
+
+_Register :: PrismP Action Unit
+_Register = prism (const Register) unwrap
+  where
+  unwrap Register = Right unit
+  unwrap y = Left y
+
+_ChangeScreen :: PrismP Action Screen
+_ChangeScreen = prism ChangeScreen unwrap
+  where
+  unwrap (ChangeScreen x) = Right x
   unwrap y = Left y
 
 _LoginScreen :: PrismP Screen Unit

@@ -43,14 +43,43 @@ type UserCommand = RPC.UserCommand String String String
 sendSync :: forall eff b. (FromJSON b) => S.Socket -> (R.Proxy b -> UserCommand) -> Aff (websocket :: S.WebSocket | eff) b
 sendSync = R.sendSync
 
-renderRegisterScreen :: T.Render State _ Action
-renderRegisterScreen dispatch _ state _ = concat
-  [ textinput "Name" (regState <<< regName)
-  , textinput "Email" (regState <<< regEmail)
-  , textinput "Password" (regState <<< regPassword)
-  , textinput "Repeat password" (regState <<< regRepeatPassword)
-  ]
+render :: T.Render State _ Action
+render dispatch _ state _ = case state.screen of
+  LoginScreen -> renderLoginScreen
+  RegisterScreen -> renderRegisterScreen
+
   where
+    renderLoginScreen = concat
+      [ textinput "Name" (loginState <<< loginName)
+      , textinput "Password" (loginState <<< loginPassword)
+      , [ R.div
+          [ RP.onClick \_ -> dispatch Login ]
+          [ R.text "Login" ]
+        , R.div
+          [ RP.onClick \_ -> dispatch (ChangeScreen ResetPasswordScreen) ]
+          [ R.text "Forgot password" ]
+        , R.a
+          [ RP.onClick \_ -> dispatch Login
+          , RP.href $ state.facebookUrl
+          ]
+          [ R.text "Login with Facebook" ]
+        , R.div
+          [ RP.onClick \_ -> dispatch (ChangeScreen RegisterScreen) ]
+          [ R.text "Register" ]
+        ]
+      ]
+
+    renderRegisterScreen = concat
+      [ textinput "Name" (regState <<< regName)
+      , textinput "Email" (regState <<< regEmail)
+      , textinput "Password" (regState <<< regPassword)
+      , textinput "Repeat password" (regState <<< regRepeatPassword)
+      , [ R.div
+          [ RP.onClick \_ -> dispatch Register ]
+          [ R.text "Register" ]
+        ]
+      ]
+
     textinput :: String -> Lens State State String String -> _
     textinput text lens =
       [ R.div [] [ R.text text ]
@@ -60,44 +89,17 @@ renderRegisterScreen dispatch _ state _ = concat
         ] []
       ]
 
-render :: T.Render State _ Action
-render dispatch _ state _ =
-  [ R.input
-    [ RP.onChange \e -> dispatch $ TextChanged (loginState <<< loginName) ((unsafeCoerce e).target.value)
-    , RP.value state.loginState.loginName
-    ] []
-  , R.input
-    [ RP.onChange \e -> dispatch $ TextChanged (loginState <<< loginPassword) ((unsafeCoerce e).target.value)
-    , RP.value state.loginState.loginPassword
-    ] []
-  , R.div
-    [ RP.onClick \_ -> dispatch Login ]
-    [ R.text "Login" ]
-  , R.div
-    [ RP.onClick \_ -> dispatch Login ]
-    [ R.text "Forgot password" ]
-  , R.a
-    [ RP.onClick \_ -> dispatch Login
-    , RP.href $ state.facebookUrl
-    ]
-    [ R.text "Login with Facebook" ]
-  , R.div
-    [ RP.onClick \_ -> dispatch Login ]
-    [ R.text "Register" ]
-  ]
-
 performAction :: T.PerformAction _ State _ Action
 performAction = T.asyncOne' handler
   where
     handler :: Action -> _ -> State -> Aff _ (State -> State)
-    handler NoOp _ state = do
-      url <- sendSync state.socket (RPC.AuthFacebookUrl "" [])
-      pure id
     handler Login _ state = do
       url <- sendSync state.socket (RPC.AuthFacebookUrl "" [])
       pure id
     handler (TextChanged lens v) _ state = do
       pure $ \s -> set lens v s
+    handler (ChangeScreen screen) _ state = do
+      pure $ \s -> s { screen = screen }
 
 spec :: T.Spec _ State _ Action
 spec = T.simpleSpec performAction render

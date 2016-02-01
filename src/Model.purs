@@ -6,8 +6,10 @@ import Prelude
 import qualified Network.WebSockets.Sync.Socket as S
 
 data Action =
-  NoOp
-  | Login
+    Login
+  | Register
+
+  | ChangeScreen Screen
   | TextChanged (Lens State State String String) String
 
 data Screen = LoginScreen | RegisterScreen | ResetPasswordScreen
