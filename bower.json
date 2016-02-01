@@ -12,7 +12,8 @@
   ],
   "dependencies": {
     "purescript-console": "^0.1.0",
-    "purescript-sync-websockets": "^0.4.2",
+    "purescript-sync-websockets": "^0.4.6",
+    "purescript-profunctor-lenses": "*",
     "purescript-thermite": "*",
     "purescript-thermite-aff": "*"
   }
