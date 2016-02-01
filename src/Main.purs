@@ -45,29 +45,30 @@ sendSync = R.sendSync
 
 renderRegisterScreen :: T.Render State _ Action
 renderRegisterScreen dispatch _ state _ = concat
-  [ textinput "Name" state.regName (TextChanged regName)
-  , textinput "Email" state.regName (TextChanged regEmail)
-  , textinput "Password" state.regName (TextChanged regPassword)
-  , textinput "Password" state.regName (TextChanged regRepeatPassword)
+  [ textinput "Name" (regState <<< regName)
+  , textinput "Email" (regState <<< regEmail)
+  , textinput "Password" (regState <<< regPassword)
+  , textinput "Repeat password" (regState <<< regRepeatPassword)
   ]
   where
-    textinput text value action =
+    textinput :: String -> Lens State State String String -> _
+    textinput text lens =
       [ R.div [] [ R.text text ]
       , R.input
-        [ RP.onChange \e -> dispatch $ action ((unsafeCoerce e).target.value)
-        , RP.value value
+        [ RP.onChange \e -> dispatch $ TextChanged lens ((unsafeCoerce e).target.value)
+        , RP.value (state ^. lens)
         ] []
       ]
 
 render :: T.Render State _ Action
 render dispatch _ state _ =
   [ R.input
-    [ RP.onChange \e -> dispatch $ TextChanged username ((unsafeCoerce e).target.value)
-    , RP.value state.username
+    [ RP.onChange \e -> dispatch $ TextChanged (loginState <<< loginName) ((unsafeCoerce e).target.value)
+    , RP.value state.loginState.loginName
     ] []
   , R.input
-    [ RP.onChange \e -> dispatch $ TextChanged password ((unsafeCoerce e).target.value)
-    , RP.value state.password
+    [ RP.onChange \e -> dispatch $ TextChanged (loginState <<< loginPassword) ((unsafeCoerce e).target.value)
+    , RP.value state.loginState.loginPassword
     ] []
   , R.div
     [ RP.onClick \_ -> dispatch Login ]
@@ -126,18 +127,7 @@ main = do
     url <- sendSync socket (RPC.AuthFacebookUrl "" [])
 
     liftEff $ do
-      let component = T.createClass spec
-            { session : ""
-            , username: ""
-            , password: ""
-            , socket
-            , facebookUrl: url
-            , screen: LoginScreen
-            , regName: ""
-            , regEmail: ""
-            , regPassword: ""
-            , regRepeatPassword: ""
-            }
+      let component = T.createClass spec (emptyState socket url)
 
       document <- DOM.window >>= DOM.document
       container <- fromJust <<< toMaybe <$> DOM.querySelector "#main" (DOM.htmlDocumentToParentNode document)

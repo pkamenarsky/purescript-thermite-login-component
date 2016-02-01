@@ -30,23 +30,11 @@ _RegisterScreen = prism (const RegisterScreen) unwrap
   unwrap RegisterScreen = Right unit
   unwrap y = Left y
 
-session :: forall a b r. Lens { "session" :: a | r } { "session" :: b | r } a b
-session = lens _."session" (_ { "session" = _ })
-
-username :: forall a b r. Lens { "username" :: a | r } { "username" :: b | r } a b
-username = lens _."username" (_ { "username" = _ })
-
-password :: forall a b r. Lens { "password" :: a | r } { "password" :: b | r } a b
-password = lens _."password" (_ { "password" = _ })
-
-socket :: forall a b r. Lens { "socket" :: a | r } { "socket" :: b | r } a b
-socket = lens _."socket" (_ { "socket" = _ })
-
-facebookUrl :: forall a b r. Lens { "facebookUrl" :: a | r } { "facebookUrl" :: b | r } a b
-facebookUrl = lens _."facebookUrl" (_ { "facebookUrl" = _ })
-
-screen :: forall a b r. Lens { "screen" :: a | r } { "screen" :: b | r } a b
-screen = lens _."screen" (_ { "screen" = _ })
+_ResetPasswordScreen :: PrismP Screen Unit
+_ResetPasswordScreen = prism (const ResetPasswordScreen) unwrap
+  where
+  unwrap ResetPasswordScreen = Right unit
+  unwrap y = Left y
 
 regName :: forall a b r. Lens { "regName" :: a | r } { "regName" :: b | r } a b
 regName = lens _."regName" (_ { "regName" = _ })
@@ -59,3 +47,33 @@ regPassword = lens _."regPassword" (_ { "regPassword" = _ })
 
 regRepeatPassword :: forall a b r. Lens { "regRepeatPassword" :: a | r } { "regRepeatPassword" :: b | r } a b
 regRepeatPassword = lens _."regRepeatPassword" (_ { "regRepeatPassword" = _ })
+
+loginName :: forall a b r. Lens { "loginName" :: a | r } { "loginName" :: b | r } a b
+loginName = lens _."loginName" (_ { "loginName" = _ })
+
+loginPassword :: forall a b r. Lens { "loginPassword" :: a | r } { "loginPassword" :: b | r } a b
+loginPassword = lens _."loginPassword" (_ { "loginPassword" = _ })
+
+resetEmail :: forall a b r. Lens { "resetEmail" :: a | r } { "resetEmail" :: b | r } a b
+resetEmail = lens _."resetEmail" (_ { "resetEmail" = _ })
+
+session :: forall a b r. Lens { "session" :: a | r } { "session" :: b | r } a b
+session = lens _."session" (_ { "session" = _ })
+
+socket :: forall a b r. Lens { "socket" :: a | r } { "socket" :: b | r } a b
+socket = lens _."socket" (_ { "socket" = _ })
+
+facebookUrl :: forall a b r. Lens { "facebookUrl" :: a | r } { "facebookUrl" :: b | r } a b
+facebookUrl = lens _."facebookUrl" (_ { "facebookUrl" = _ })
+
+screen :: forall a b r. Lens { "screen" :: a | r } { "screen" :: b | r } a b
+screen = lens _."screen" (_ { "screen" = _ })
+
+regState :: forall a b r. Lens { "regState" :: a | r } { "regState" :: b | r } a b
+regState = lens _."regState" (_ { "regState" = _ })
+
+loginState :: forall a b r. Lens { "loginState" :: a | r } { "loginState" :: b | r } a b
+loginState = lens _."loginState" (_ { "loginState" = _ })
+
+resetPasswordState :: forall a b r. Lens { "resetPasswordState" :: a | r } { "resetPasswordState" :: b | r } a b
+resetPasswordState = lens _."resetPasswordState" (_ { "resetPasswordState" = _ })
