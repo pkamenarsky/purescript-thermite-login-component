@@ -47,6 +47,7 @@ render :: T.Render State _ Action
 render dispatch _ state _ = case state.screen of
   LoginScreen -> renderLoginScreen
   RegisterScreen -> renderRegisterScreen
+  ResetPasswordScreen -> renderResetPasswordScreen
 
   where
     renderLoginScreen = concat
@@ -77,6 +78,14 @@ render dispatch _ state _ = case state.screen of
       , [ R.div
           [ RP.onClick \_ -> dispatch Register ]
           [ R.text "Register" ]
+        ]
+      ]
+
+    renderResetPasswordScreen = concat
+      [ textinput "Email" (resetPasswordState <<< resetEmail)
+      , [ R.div
+          [ RP.onClick \_ -> dispatch Register ]
+          [ R.text "Reset password" ]
         ]
       ]
 

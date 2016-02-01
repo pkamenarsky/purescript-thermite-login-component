@@ -8,6 +8,7 @@ import qualified Network.WebSockets.Sync.Socket as S
 data Action =
     Login
   | Register
+  | ResetPassword
 
   | ChangeScreen Screen
   | TextChanged (Lens State State String String) String
