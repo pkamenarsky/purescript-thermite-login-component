@@ -10,6 +10,10 @@ import Data.Lens
 import Data.Maybe
 import Data.Maybe.Unsafe (fromJust)
 import Data.Nullable (toMaybe)
+import Data.String
+import Data.Tuple
+
+import Global
 
 import Control.Alt
 import Control.Apply
@@ -30,6 +34,7 @@ import Thermite.Aff as T
 
 import DOM as DOM
 import DOM.HTML as DOM
+import DOM.HTML.Location as DOM
 import DOM.HTML.Types as DOM
 import DOM.HTML.Window as DOM
 import DOM.Node.ParentNode as DOM
@@ -72,8 +77,7 @@ render dispatch _ state _ = case state.screen of
           [ RP.onClick \_ -> dispatch (ChangeScreen ResetPasswordScreen) ]
           [ R.text "Forgot password" ]
         , R.a
-          [ RP.onClick \_ -> dispatch Login
-          , RP.href $ state.facebookUrl
+          [ RP.href $ state.facebookUrl
           ]
           [ R.text "Login with Facebook" ]
         , R.div
@@ -144,6 +148,8 @@ performAction = T.asyncOne' handler
       pure $ case r of
         Left  _ -> set (regState <<< regResult) (Just $ Left unit)
         Right _ -> set (regState <<< regResult) (Just $ Right unit)
+    handler ResetPassword _ state = do
+      pure id
     handler (TextChanged lens v) _ state = do
       pure $ \s -> set lens v s
     handler (ChangeScreen screen) _ state = do
@@ -161,6 +167,13 @@ route = LoginScreen <$ (lit "login")
     <|> RegisterScreen <$ (lit "register")
     <|> ResetPasswordScreen <$ (lit "reset-password")
 
+parseParams :: String -> Array (Tuple String String)
+parseParams str = case stripPrefix "?" str of
+  Just str -> map (toTuple <<< split "=") (split "&" str)
+  Nothing -> []
+    where toTuple [a, b] = Tuple a b
+          toTuple _ = Tuple "" ""
+
 main :: forall e. Eff (dom :: DOM.DOM, websocket :: S.WebSocket, err :: EXCEPTION, console :: CONSOLE | e) Unit
 main = do
   socket <- S.connect "ws://localhost:8538" true
@@ -170,24 +183,35 @@ main = do
     }
 
   match <- matchHash route <$> getHash
+  window <- DOM.window
+  location <- DOM.location window
+  host <- DOM.host location
+  hash <- DOM.hash location
+  search <- DOM.search location
 
-  case match of
-    Right screen -> do
-      runAff throwException (const (pure unit)) $ do
-        url <- sendSync socket (RPC.AuthFacebookUrl "" [])
+  logAny location
 
-        liftEff $ do
-          let changeHash this _ screen = do
-                R.transformState this \s -> s { screen = screen }
-                return unit
+  runAff throwException (const (pure unit)) $ do
+    if hash == "#oauth-login"
+      then do
+        token <- sendSync socket (RPC.AuthFacebook ("http://" ++ host ++ "/dist/#oauth-login") (parseParams search) sessionLength)
+        liftEff $ logAny token
+      else case match of
+        Right screen -> do
+          url <- sendSync socket (RPC.AuthFacebookUrl (encodeURIComponent $ "http://" ++ host ++ "/dist/#oauth-login") [])
 
-              reactSpec = T.createReactSpec spec (emptyState socket url)
-              component = R.createClass (reactSpec.spec { componentWillMount = \this -> matches route (changeHash this) })
-              factory = R.createFactory component {}
+          liftEff $ do
+            let changeHash this _ screen = do
+                  R.transformState this \s -> s { screen = screen }
+                  return unit
 
-          document <- DOM.window >>= DOM.document
-          container <- fromJust <<< toMaybe <$> DOM.querySelector "#main" (DOM.htmlDocumentToParentNode document)
+                reactSpec = T.createReactSpec spec (emptyState socket url)
+                component = R.createClass (reactSpec.spec { componentWillMount = \this -> matches route (changeHash this) })
+                factory = R.createFactory component {}
 
-          this <- R.render factory container
-          return unit
-    _ -> return unit
+            document <- DOM.window >>= DOM.document
+            container <- fromJust <<< toMaybe <$> DOM.querySelector "#main" (DOM.htmlDocumentToParentNode document)
+
+            this <- R.render factory container
+            return unit
+        _ -> return unit
