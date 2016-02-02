@@ -16,6 +16,7 @@ import Control.Monad.Aff
 import Control.Monad.Eff
 import Control.Monad.Eff.Class
 import Control.Monad.Eff.Console
+import Control.Monad.Eff.Console.Unsafe
 import Control.Monad.Eff.Exception (throwException, EXCEPTION())
 
 import Network.WebSockets.Sync.Socket as S
@@ -47,7 +48,7 @@ import Unsafe.Coerce
 import Model
 import Model.Lenses
 
-type UserCommand = RPC.UserCommand String String String
+type UserCommand = RPC.UserCommand String Int String
 
 -- specialized sendSync
 sendSync :: forall eff b. (FromJSON b) => S.Socket -> (R.Proxy b -> UserCommand) -> Aff (websocket :: S.WebSocket | eff) b
@@ -114,6 +115,15 @@ performAction = T.asyncOne' handler
     handler :: Action -> _ -> State -> Aff _ (State -> State)
     handler Login _ state = do
       url <- sendSync state.socket (RPC.AuthFacebookUrl "" [])
+      pure id
+    handler Register _ state = do
+      user <- sendSync state.socket $ RPC.CreateUser (RPC.User
+        { u_name: state.regState.regName
+        , u_email: state.regState.regEmail
+        , u_password: RPC.PasswordHidden
+        , u_active: true
+        , u_more: "none" }) state.regState.regPassword
+      liftEff $ logAny user
       pure id
     handler (TextChanged lens v) _ state = do
       pure $ \s -> set lens v s
