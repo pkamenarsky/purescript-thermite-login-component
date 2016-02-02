@@ -62,7 +62,7 @@ emptyResetPasswordState =
   }
 
 type State =
-  { session :: String
+  { session :: Maybe RPC.SessionId
   , socket :: S.Socket
 
   , facebookUrl :: String
@@ -75,7 +75,7 @@ type State =
 
 emptyState :: S.Socket -> String -> State
 emptyState socket facebookUrl =
-  { session: ""
+  { session: Nothing
   , socket
   , facebookUrl
   , screen: LoginScreen

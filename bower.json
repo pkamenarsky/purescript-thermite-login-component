@@ -18,6 +18,7 @@
     "purescript-strings": "*",
     "purescript-globals": "*",
     "purescript-thermite": "*",
-    "purescript-thermite-aff": "*"
+    "purescript-thermite-aff": "*",
+    "purescript-webstorage": "*"
   }
 }

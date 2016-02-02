@@ -13,6 +13,7 @@ import Data.Nullable (toMaybe)
 import Data.String
 import Data.Tuple
 
+import Browser.WebStorage as WebStorage
 import Global
 
 import Control.Alt
@@ -163,7 +164,8 @@ spec :: T.Spec _ State _ Action
 spec = T.simpleSpec performAction render
 
 route :: Match Screen
-route = LoginScreen <$ (lit "login")
+route = LoginScreen <$ (lit "")
+    <|> LoginScreen <$ (lit "login")
     <|> RegisterScreen <$ (lit "register")
     <|> ResetPasswordScreen <$ (lit "reset-password")
 
@@ -174,8 +176,11 @@ parseParams str = case stripPrefix "?" str of
     where toTuple [a, b] = Tuple a b
           toTuple _ = Tuple "" ""
 
-main :: forall e. Eff (dom :: DOM.DOM, websocket :: S.WebSocket, err :: EXCEPTION, console :: CONSOLE | e) Unit
+-- NOTE: main should take (SessionId -> Aff (Maybe Spec)) and yield (Aff Spec)
+main :: forall e. Eff (webStorage :: WebStorage.WebStorage, dom :: DOM.DOM, websocket :: S.WebSocket, err :: EXCEPTION, console :: CONSOLE | e) Unit
 main = do
+  session <- WebStorage.getItem WebStorage.localStorage "session"
+
   socket <- S.connect "ws://localhost:8538" true
     { connected : \_ -> return unit
     , disconnected : return unit
@@ -185,20 +190,19 @@ main = do
   match <- matchHash route <$> getHash
   window <- DOM.window
   location <- DOM.location window
-  host <- DOM.host location
+  origin <- DOM.origin location
+  pathname <- DOM.pathname location
   hash <- DOM.hash location
   search <- DOM.search location
-
-  logAny location
 
   runAff throwException (const (pure unit)) $ do
     if hash == "#oauth-login"
       then do
-        token <- sendSync socket (RPC.AuthFacebook ("http://" ++ host ++ "/dist/#oauth-login") (parseParams search) sessionLength)
+        token <- sendSync socket (RPC.AuthFacebook (origin ++ pathname ++ "#oauth-login") (parseParams search) sessionLength)
         liftEff $ logAny token
       else case match of
         Right screen -> do
-          url <- sendSync socket (RPC.AuthFacebookUrl (encodeURIComponent $ "http://" ++ host ++ "/dist/#oauth-login") [])
+          url <- sendSync socket (RPC.AuthFacebookUrl (encodeURIComponent $ origin ++ pathname ++ "#oauth-login") [])
 
           liftEff $ do
             let changeHash this _ screen = do
