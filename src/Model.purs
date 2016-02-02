@@ -5,7 +5,8 @@ import Data.Either
 import Data.Maybe
 
 import Prelude
-import qualified Network.WebSockets.Sync.Socket as S
+import Network.WebSockets.Sync.Socket as S
+import Web.Users.Remote.Types.Shared as RPC
 
 data Action =
     Login
@@ -39,12 +40,16 @@ emptyRegisterState =
 type LoginState =
   { loginName :: String
   , loginPassword :: String
+
+  , loginSession :: Maybe (Either Unit RPC.SessionId)
   }
 
 emptyLoginState :: LoginState
 emptyLoginState =
   { loginName: ""
   , loginPassword: ""
+
+  , loginSession: Nothing
   }
 
 type ResetPasswordState =

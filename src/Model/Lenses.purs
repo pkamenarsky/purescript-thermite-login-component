@@ -69,6 +69,9 @@ loginName = lens _."loginName" (_ { "loginName" = _ })
 loginPassword :: forall a b r. Lens { "loginPassword" :: a | r } { "loginPassword" :: b | r } a b
 loginPassword = lens _."loginPassword" (_ { "loginPassword" = _ })
 
+loginSession :: forall a b r. Lens { "loginSession" :: a | r } { "loginSession" :: b | r } a b
+loginSession = lens _."loginSession" (_ { "loginSession" = _ })
+
 resetEmail :: forall a b r. Lens { "resetEmail" :: a | r } { "resetEmail" :: b | r } a b
 resetEmail = lens _."resetEmail" (_ { "resetEmail" = _ })
 

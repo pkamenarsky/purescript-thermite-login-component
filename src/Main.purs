@@ -49,7 +49,7 @@ import Unsafe.Coerce
 import Model
 import Model.Lenses
 
-type UserCommand = RPC.UserCommand String Int String
+type UserCommand = RPC.UserCommand String Int RPC.SessionId
 
 -- specialized sendSync
 sendSync :: forall eff b. (FromJSON b) => S.Socket -> (R.Proxy b -> UserCommand) -> Aff (websocket :: S.WebSocket | eff) b
@@ -80,6 +80,10 @@ render dispatch _ state _ = case state.screen of
           [ RP.onClick \_ -> dispatch (ChangeScreen RegisterScreen) ]
           [ R.text "Register" ]
         ]
+      , case state.loginState.loginSession of
+          Just (Left _) -> [ R.div [] [ R.text "Error" ] ]
+          Just (Right _) ->  [ R.div [] [ R.text "Logged in successfully" ] ]
+          _ ->  []
       ]
 
     renderRegisterScreen = concat
@@ -114,13 +118,22 @@ render dispatch _ state _ = case state.screen of
         ] []
       ]
 
+-- TODO: config this
+sessionLength :: Int
+sessionLength = 3600 * 60
+
 performAction :: T.PerformAction _ State _ Action
 performAction = T.asyncOne' handler
   where
     handler :: Action -> _ -> State -> Aff _ (State -> State)
     handler Login _ state = do
-      url <- sendSync state.socket (RPC.AuthFacebookUrl "" [])
-      pure id
+      r <- sendSync state.socket $ RPC.AuthUser
+        state.loginState.loginName
+        state.loginState.loginPassword
+        sessionLength
+      pure $ case r of
+        Just sid -> set (loginState <<< loginSession) (Just $ Right sid)
+        Nothing  -> set (loginState <<< loginSession) (Just $ Left unit)
     handler Register _ state = do
       r <- sendSync state.socket $ RPC.CreateUser (RPC.User
         { u_name: state.regState.regName
