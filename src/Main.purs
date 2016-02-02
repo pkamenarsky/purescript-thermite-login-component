@@ -7,6 +7,7 @@ import Data.Either
 import Data.Functor
 import Data.JSON
 import Data.Lens
+import Data.Maybe
 import Data.Maybe.Unsafe (fromJust)
 import Data.Nullable (toMaybe)
 
@@ -90,6 +91,10 @@ render dispatch _ state _ = case state.screen of
           [ RP.onClick \_ -> dispatch Register ]
           [ R.text "Register" ]
         ]
+      , case state.regState.regResult of
+          Just (Left _) -> [ R.div [] [ R.text "Error" ] ]
+          Just (Right _) ->  [ R.div [] [ R.text "User created succesfully" ] ]
+          _ ->  []
       ]
 
     renderResetPasswordScreen = concat
@@ -117,14 +122,15 @@ performAction = T.asyncOne' handler
       url <- sendSync state.socket (RPC.AuthFacebookUrl "" [])
       pure id
     handler Register _ state = do
-      user <- sendSync state.socket $ RPC.CreateUser (RPC.User
+      r <- sendSync state.socket $ RPC.CreateUser (RPC.User
         { u_name: state.regState.regName
         , u_email: state.regState.regEmail
         , u_password: RPC.PasswordHidden
         , u_active: true
         , u_more: "none" }) state.regState.regPassword
-      liftEff $ logAny user
-      pure id
+      pure $ case r of
+        Left  _ -> set (regState <<< regResult) (Just $ Left unit)
+        Right _ -> set (regState <<< regResult) (Just $ Right unit)
     handler (TextChanged lens v) _ state = do
       pure $ \s -> set lens v s
     handler (ChangeScreen screen) _ state = do

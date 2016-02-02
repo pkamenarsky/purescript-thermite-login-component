@@ -1,6 +1,8 @@
 module Model where
 
 import Data.Lens
+import Data.Either
+import Data.Maybe
 
 import Prelude
 import qualified Network.WebSockets.Sync.Socket as S
@@ -20,6 +22,8 @@ type RegisterState =
   , regEmail :: String
   , regPassword :: String
   , regRepeatPassword :: String
+
+  , regResult :: Maybe (Either Unit Unit)
   }
 
 emptyRegisterState :: RegisterState
@@ -28,6 +32,8 @@ emptyRegisterState =
   , regEmail: ""
   , regPassword: ""
   , regRepeatPassword: ""
+
+  , regResult: Nothing
   }
 
 type LoginState =

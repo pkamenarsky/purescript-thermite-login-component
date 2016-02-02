@@ -18,6 +18,12 @@ _Register = prism (const Register) unwrap
   unwrap Register = Right unit
   unwrap y = Left y
 
+_ResetPassword :: PrismP Action Unit
+_ResetPassword = prism (const ResetPassword) unwrap
+  where
+  unwrap ResetPassword = Right unit
+  unwrap y = Left y
+
 _ChangeScreen :: PrismP Action Screen
 _ChangeScreen = prism ChangeScreen unwrap
   where
@@ -53,6 +59,9 @@ regPassword = lens _."regPassword" (_ { "regPassword" = _ })
 
 regRepeatPassword :: forall a b r. Lens { "regRepeatPassword" :: a | r } { "regRepeatPassword" :: b | r } a b
 regRepeatPassword = lens _."regRepeatPassword" (_ { "regRepeatPassword" = _ })
+
+regResult :: forall a b r. Lens { "regResult" :: a | r } { "regResult" :: b | r } a b
+regResult = lens _."regResult" (_ { "regResult" = _ })
 
 loginName :: forall a b r. Lens { "loginName" :: a | r } { "loginName" :: b | r } a b
 loginName = lens _."loginName" (_ { "loginName" = _ })
