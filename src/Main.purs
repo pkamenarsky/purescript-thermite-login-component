@@ -156,19 +156,6 @@ main = do
     , message : \_ -> return unit
     }
 
-  {-
-  runAff throwException (const (pure unit)) $ do
-    -- TODO: reopen connection on send
-    -- url <- sendSync socket (RPC.AuthFacebookUrl "" [])
-    user <- sendSync socket $ RPC.CreateUser (RPC.User
-      { u_name: "user"
-      , u_email: "email"
-      , u_password: RPC.PasswordHidden
-      , u_active: true
-      , u_more: "none" }) "SECRET!!!"
-    return unit
-  -}
-
   match <- matchHash route <$> getHash
 
   case match of
@@ -177,20 +164,17 @@ main = do
         url <- sendSync socket (RPC.AuthFacebookUrl "" [])
 
         liftEff $ do
-          let component = T.createClass spec $ (emptyState socket url) { screen = screen }
-              factory = R.createFactory component {}
-
-              changeHash this _ screen = do
+          let changeHash this _ screen = do
                 R.transformState this \s -> s { screen = screen }
                 return unit
 
               reactSpec = T.createReactSpec spec (emptyState socket url)
-              component' = R.createClass (reactSpec.spec { componentWillMount = \this -> matches route (changeHash this) })
-              factory' = R.createFactory component' {}
+              component = R.createClass (reactSpec.spec { componentWillMount = \this -> matches route (changeHash this) })
+              factory = R.createFactory component {}
 
           document <- DOM.window >>= DOM.document
           container <- fromJust <<< toMaybe <$> DOM.querySelector "#main" (DOM.htmlDocumentToParentNode document)
 
-          this <- R.render factory' container
+          this <- R.render factory container
           return unit
     _ -> return unit
