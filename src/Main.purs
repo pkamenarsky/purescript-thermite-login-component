@@ -38,6 +38,7 @@ import React.DOM.Props as RP
 
 import Routing
 import Routing.Hash (getHash)
+import Routing.Hash.Aff (setHash)
 import Routing.Match
 import Routing.Match.Class
 
@@ -117,6 +118,10 @@ performAction = T.asyncOne' handler
     handler (TextChanged lens v) _ state = do
       pure $ \s -> set lens v s
     handler (ChangeScreen screen) _ state = do
+      case screen of
+        LoginScreen -> setHash "login"
+        RegisterScreen -> setHash "register"
+        ResetPasswordScreen -> setHash "reset-password"
       pure $ \s -> s { screen = screen }
 
 spec :: T.Spec _ State _ Action
@@ -159,10 +164,17 @@ main = do
           let component = T.createClass spec $ (emptyState socket url) { screen = screen }
               factory = R.createFactory component {}
 
-          R.writeState factory (emptyState socket url)
+              changeHash this _ screen = do
+                R.transformState this \s -> s { screen = screen }
+                return unit
+
+              reactSpec = T.createReactSpec spec (emptyState socket url)
+              component' = R.createClass (reactSpec.spec { componentWillMount = \this -> matches route (changeHash this) })
+              factory' = R.createFactory component' {}
+
           document <- DOM.window >>= DOM.document
           container <- fromJust <<< toMaybe <$> DOM.querySelector "#main" (DOM.htmlDocumentToParentNode document)
 
-          R.render factory container
+          this <- R.render factory' container
           return unit
     _ -> return unit
