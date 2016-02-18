@@ -14,7 +14,6 @@
     "purescript-console": "^0.1.0",
     "purescript-sync-websockets": "^0.4.7",
     "purescript-profunctor-lenses": "*",
-    "purescript-routing": "*",
     "purescript-strings": "*",
     "purescript-globals": "*",
     "purescript-thermite": "pkamenarsky/purescript-thermite",

@@ -45,12 +45,6 @@ import React as R
 import React.DOM as R
 import React.DOM.Props as RP
 
-import Routing
-import Routing.Hash (getHash)
-import Routing.Hash.Aff (setHash)
-import Routing.Match
-import Routing.Match.Class
-
 import Unsafe.Coerce
 
 import Thermite.Login.Model
@@ -132,7 +126,12 @@ performAction = handler
         state.loginState.loginName
         state.loginState.loginPassword
         props.sessionLength
+
       emit \st -> st { sessionId = sessionId }
+
+      case sessionId of
+        Just (RPC.SessionId sid) -> lift $ liftEff $ WebStorage.setItem WebStorage.localStorage "session" sid.unSessionId
+        Nothing -> return unit
     handler Register props state = do
       r <- lift $ sendSync props.socket $ RPC.CreateUser (RPC.User
         { u_name: state.regState.regName
@@ -152,12 +151,6 @@ performAction = handler
 
 spec :: T.Spec _ State _ Action
 spec = T.simpleSpec performAction render
-
-route :: Match Screen
-route = LoginScreen <$ (lit "")
-    <|> LoginScreen <$ (lit "login")
-    <|> RegisterScreen <$ (lit "register")
-    <|> ResetPasswordScreen <$ (lit "reset-password")
 
 parseParams :: String -> Array (Tuple String String)
 parseParams str = case stripPrefix "?" str of
