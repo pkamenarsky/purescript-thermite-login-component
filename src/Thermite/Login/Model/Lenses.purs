@@ -48,6 +48,15 @@ _ResetPasswordScreen = prism (const ResetPasswordScreen) unwrap
   unwrap ResetPasswordScreen = Right unit
   unwrap y = Left y
 
+redirectUrl :: forall a b r. Lens { "redirectUrl" :: a | r } { "redirectUrl" :: b | r } a b
+redirectUrl = lens _."redirectUrl" (_ { "redirectUrl" = _ })
+
+socket :: forall a b r. Lens { "socket" :: a | r } { "socket" :: b | r } a b
+socket = lens _."socket" (_ { "socket" = _ })
+
+sessionLength :: forall a b r. Lens { "sessionLength" :: a | r } { "sessionLength" :: b | r } a b
+sessionLength = lens _."sessionLength" (_ { "sessionLength" = _ })
+
 regName :: forall a b r. Lens { "regName" :: a | r } { "regName" :: b | r } a b
 regName = lens _."regName" (_ { "regName" = _ })
 
@@ -69,20 +78,14 @@ loginName = lens _."loginName" (_ { "loginName" = _ })
 loginPassword :: forall a b r. Lens { "loginPassword" :: a | r } { "loginPassword" :: b | r } a b
 loginPassword = lens _."loginPassword" (_ { "loginPassword" = _ })
 
-loginSession :: forall a b r. Lens { "loginSession" :: a | r } { "loginSession" :: b | r } a b
-loginSession = lens _."loginSession" (_ { "loginSession" = _ })
-
 resetEmail :: forall a b r. Lens { "resetEmail" :: a | r } { "resetEmail" :: b | r } a b
 resetEmail = lens _."resetEmail" (_ { "resetEmail" = _ })
 
-session :: forall a b r. Lens { "session" :: a | r } { "session" :: b | r } a b
-session = lens _."session" (_ { "session" = _ })
+sessionId :: forall a b r. Lens { "sessionId" :: a | r } { "sessionId" :: b | r } a b
+sessionId = lens _."sessionId" (_ { "sessionId" = _ })
 
-socket :: forall a b r. Lens { "socket" :: a | r } { "socket" :: b | r } a b
-socket = lens _."socket" (_ { "socket" = _ })
-
-facebookUrl :: forall a b r. Lens { "facebookUrl" :: a | r } { "facebookUrl" :: b | r } a b
-facebookUrl = lens _."facebookUrl" (_ { "facebookUrl" = _ })
+facebookLoginUrl :: forall a b r. Lens { "facebookLoginUrl" :: a | r } { "facebookLoginUrl" :: b | r } a b
+facebookLoginUrl = lens _."facebookLoginUrl" (_ { "facebookLoginUrl" = _ })
 
 screen :: forall a b r. Lens { "screen" :: a | r } { "screen" :: b | r } a b
 screen = lens _."screen" (_ { "screen" = _ })

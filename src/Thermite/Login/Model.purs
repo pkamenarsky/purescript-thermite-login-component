@@ -20,8 +20,8 @@ data Screen = LoginScreen | RegisterScreen | ResetPasswordScreen
 
 type Config =
   { redirectUrl :: String
-  , facebookUrl :: String
   , socket :: S.Socket
+  , sessionLength :: Int
   }
 
 type RegisterState =
@@ -46,16 +46,12 @@ emptyRegisterState =
 type LoginState =
   { loginName :: String
   , loginPassword :: String
-
-  , loginSession :: Maybe (Either Unit RPC.SessionId)
   }
 
 emptyLoginState :: LoginState
 emptyLoginState =
   { loginName: ""
   , loginPassword: ""
-
-  , loginSession: Nothing
   }
 
 type ResetPasswordState =
@@ -68,7 +64,9 @@ emptyResetPasswordState =
   }
 
 type State =
-  { session :: Maybe RPC.SessionId
+  { sessionId :: Maybe RPC.SessionId
+
+  , facebookLoginUrl :: String
 
   , screen :: Screen
   , regState :: RegisterState
@@ -76,10 +74,11 @@ type State =
   , resetPasswordState :: ResetPasswordState
   }
 
-emptyState :: State
-emptyState =
-  { session: Nothing
+emptyState :: String -> State
+emptyState facebookLoginUrl =
+  { sessionId: Nothing
   , screen: LoginScreen
+  , facebookLoginUrl
   , regState: emptyRegisterState
   , loginState: emptyLoginState
   , resetPasswordState: emptyResetPasswordState

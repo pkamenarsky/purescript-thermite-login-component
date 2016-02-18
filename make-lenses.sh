@@ -1,1 +1,1 @@
-purescript-derive-lenses < src/Model.purs > src/Model/Lenses.purs
+purescript-derive-lenses < src/Thermite/Login/Model.purs > src/Thermite/Login/Model/Lenses.purs
