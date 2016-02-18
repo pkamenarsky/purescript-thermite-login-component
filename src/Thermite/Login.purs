@@ -62,8 +62,8 @@ type UserCommand = RPC.UserCommand String Int RPC.SessionId
 sendSync :: forall eff b. (FromJSON b) => S.Socket -> (R.Proxy b -> UserCommand) -> Aff (websocket :: S.WebSocket | eff) b
 sendSync = R.sendSync
 
-render :: T.Render State _ Action
-render dispatch _ state _ = case state.screen of
+render :: T.Render State Config Action
+render dispatch props state _ = case state.screen of
   LoginScreen -> renderLoginScreen
   RegisterScreen -> renderRegisterScreen
   ResetPasswordScreen -> renderResetPasswordScreen
@@ -79,7 +79,7 @@ render dispatch _ state _ = case state.screen of
           [ RP.onClick \_ -> dispatch (ChangeScreen ResetPasswordScreen) ]
           [ R.text "Forgot password" ]
         , R.a
-          [ RP.href $ state.facebookUrl
+          [ RP.href $ props.facebookUrl
           ]
           [ R.text "Login with Facebook" ]
         , R.div
@@ -128,20 +128,20 @@ render dispatch _ state _ = case state.screen of
 sessionLength :: Int
 sessionLength = 3600 * 60
 
-performAction :: T.PerformAction _ State _ Action
+performAction :: T.PerformAction _ State Config Action
 performAction = handler
   where
-    handler :: T.PerformAction _ State _ Action
-    handler Login _ state = do
-      r <- lift $ sendSync state.socket $ RPC.AuthUser
+    handler :: T.PerformAction _ State Config Action
+    handler Login props state = do
+      r <- lift $ sendSync props.socket $ RPC.AuthUser
         state.loginState.loginName
         state.loginState.loginPassword
         sessionLength
       emit $ case r of
         Just sid -> set (loginState <<< loginSession) (Just $ Right sid)
         Nothing  -> set (loginState <<< loginSession) (Just $ Left unit)
-    handler Register _ state = do
-      r <- lift $ sendSync state.socket $ RPC.CreateUser (RPC.User
+    handler Register props state = do
+      r <- lift $ sendSync props.socket $ RPC.CreateUser (RPC.User
         { u_name: state.regState.regName
         , u_email: state.regState.regEmail
         , u_password: RPC.PasswordHidden
@@ -155,10 +155,6 @@ performAction = handler
     handler (TextChanged lens v) _ state = do
       emit $ set lens v
     handler (ChangeScreen screen) _ state = do
-      case screen of
-        LoginScreen -> lift $ setHash "login"
-        RegisterScreen -> lift $ setHash "register"
-        ResetPasswordScreen -> lift $ setHash "reset-password"
       emit $ \s -> s { screen = screen }
 
 spec :: T.Spec _ State _ Action
@@ -176,6 +172,27 @@ parseParams str = case stripPrefix "?" str of
   Nothing -> []
     where toTuple [a, b] = Tuple a b
           toTuple _ = Tuple "" ""
+
+getSessionId :: forall eff. Config -> Aff (webStorage :: WebStorage.WebStorage, dom :: DOM.DOM, websocket :: S.WebSocket) (Maybe RPC.SessionId)
+getSessionId cfg = do
+  window <- liftEff $ DOM.window
+  location <- liftEff $ DOM.location window
+  origin <- liftEff $ DOM.origin location
+  pathname <- liftEff $ DOM.pathname location
+  hash <- liftEff $ DOM.hash location
+  search <- liftEff $ DOM.search location
+
+  if hash == "#" ++ cfg.redirectUrl
+    then do
+      token <- sendSync cfg.socket (RPC.AuthFacebook (origin ++ pathname ++ "#" ++ cfg.redirectUrl) (parseParams search) sessionLength)
+      case token of
+        Left _ -> return Nothing
+        Right session -> return $ Just session
+    else do
+      session <- liftEff $ WebStorage.getItem WebStorage.localStorage "session"
+      case session of
+        Just session -> return $ Just $ RPC.SessionId { unSessionId: session }
+        Nothing -> return Nothing
 
 -- NOTE: main should take (SessionId -> Aff (Maybe Spec)) and yield (Aff Spec)
 main :: forall e. Eff (webStorage :: WebStorage.WebStorage, dom :: DOM.DOM, websocket :: S.WebSocket, err :: EXCEPTION, console :: CONSOLE | e) Unit
@@ -203,16 +220,16 @@ main = do
         liftEff $ logAny token
       else case match of
         Right screen -> do
-          url <- sendSync socket (RPC.AuthFacebookUrl (encodeURIComponent $ origin ++ pathname ++ "#oauth-login") [])
+          facebookUrl <- sendSync socket (RPC.AuthFacebookUrl (encodeURIComponent $ origin ++ pathname ++ "#oauth-login") [])
 
           liftEff $ do
             let changeHash this _ screen = do
                   R.transformState this \s -> s { screen = screen }
                   return unit
 
-                reactSpec = T.createReactSpec spec (emptyState socket url)
+                reactSpec = T.createReactSpec spec emptyState
                 component = R.createClass (reactSpec.spec { componentWillMount = \this -> matches route (changeHash this) })
-                factory = R.createFactory component {}
+                factory = R.createFactory component { socket, facebookUrl, redirectUrl: "oauth" }
 
             document <- DOM.window >>= DOM.document
             container <- fromJust <<< toMaybe <$> DOM.querySelector "#main" (DOM.htmlDocumentToParentNode document)
