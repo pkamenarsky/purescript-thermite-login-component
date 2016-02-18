@@ -8,7 +8,6 @@ import Data.Functor
 import Data.JSON
 import Data.Lens
 import Data.Maybe
-import Data.Maybe.Unsafe (fromJust)
 import Data.Nullable (toMaybe)
 import Data.String
 import Data.Tuple
@@ -22,9 +21,6 @@ import Control.Coroutine (emit)
 import Control.Monad.Aff
 import Control.Monad.Eff
 import Control.Monad.Eff.Class
-import Control.Monad.Eff.Console
-import Control.Monad.Eff.Console.Unsafe
-import Control.Monad.Eff.Exception (throwException, EXCEPTION())
 import Control.Monad.Trans
 
 import Network.WebSockets.Sync.Socket as S
