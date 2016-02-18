@@ -17,8 +17,7 @@
     "purescript-routing": "*",
     "purescript-strings": "*",
     "purescript-globals": "*",
-    "purescript-thermite": "*",
-    "purescript-thermite-aff": "*",
+    "purescript-thermite": "pkamenarsky/purescript-thermite",
     "purescript-webstorage": "*"
   }
 }

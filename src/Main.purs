@@ -1,4 +1,4 @@
-module Main where
+module Thermite.Login where
 
 import Prelude
 
@@ -18,12 +18,14 @@ import Global
 
 import Control.Alt
 import Control.Apply
+import Control.Coroutine (emit)
 import Control.Monad.Aff
 import Control.Monad.Eff
 import Control.Monad.Eff.Class
 import Control.Monad.Eff.Console
 import Control.Monad.Eff.Console.Unsafe
 import Control.Monad.Eff.Exception (throwException, EXCEPTION())
+import Control.Monad.Trans
 
 import Network.WebSockets.Sync.Socket as S
 import Network.WebSockets.Sync.Request as R
@@ -31,7 +33,6 @@ import Network.WebSockets.Sync.Request as R
 import Web.Users.Remote.Types.Shared as RPC
 
 import Thermite as T
-import Thermite.Aff as T
 
 import DOM as DOM
 import DOM.HTML as DOM
@@ -128,37 +129,37 @@ sessionLength :: Int
 sessionLength = 3600 * 60
 
 performAction :: T.PerformAction _ State _ Action
-performAction = T.asyncOne' handler
+performAction = handler
   where
-    handler :: Action -> _ -> State -> Aff _ (State -> State)
+    handler :: T.PerformAction _ State _ Action
     handler Login _ state = do
-      r <- sendSync state.socket $ RPC.AuthUser
+      r <- lift $ sendSync state.socket $ RPC.AuthUser
         state.loginState.loginName
         state.loginState.loginPassword
         sessionLength
-      pure $ case r of
+      emit $ case r of
         Just sid -> set (loginState <<< loginSession) (Just $ Right sid)
         Nothing  -> set (loginState <<< loginSession) (Just $ Left unit)
     handler Register _ state = do
-      r <- sendSync state.socket $ RPC.CreateUser (RPC.User
+      r <- lift $ sendSync state.socket $ RPC.CreateUser (RPC.User
         { u_name: state.regState.regName
         , u_email: state.regState.regEmail
         , u_password: RPC.PasswordHidden
         , u_active: true
         , u_more: "none" }) state.regState.regPassword
-      pure $ case r of
+      emit $ case r of
         Left  _ -> set (regState <<< regResult) (Just $ Left unit)
         Right _ -> set (regState <<< regResult) (Just $ Right unit)
     handler ResetPassword _ state = do
-      pure id
+      return unit
     handler (TextChanged lens v) _ state = do
-      pure $ \s -> set lens v s
+      emit $ set lens v
     handler (ChangeScreen screen) _ state = do
       case screen of
-        LoginScreen -> setHash "login"
-        RegisterScreen -> setHash "register"
-        ResetPasswordScreen -> setHash "reset-password"
-      pure $ \s -> s { screen = screen }
+        LoginScreen -> lift $ setHash "login"
+        RegisterScreen -> lift $ setHash "register"
+        ResetPasswordScreen -> lift $ setHash "reset-password"
+      emit $ \s -> s { screen = screen }
 
 spec :: T.Spec _ State _ Action
 spec = T.simpleSpec performAction render
