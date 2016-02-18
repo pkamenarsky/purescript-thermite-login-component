@@ -1,4 +1,4 @@
-module Thermite.Login where
+module Thermite.Login (spec, getState) where
 
 import Prelude
 
@@ -51,6 +51,8 @@ import Thermite.Login.Model
 import Thermite.Login.Model.Lenses
 
 type UserCommand = RPC.UserCommand String Int RPC.SessionId
+
+type Effects eff = (webStorage :: WebStorage.WebStorage, dom :: DOM.DOM, websocket :: S.WebSocket | eff)
 
 -- specialized sendSync
 sendSync :: forall eff b. (FromJSON b) => S.Socket -> (R.Proxy b -> UserCommand) -> Aff (websocket :: S.WebSocket | eff) b
@@ -117,10 +119,9 @@ render dispatch props state _ = case state.screen of
         ] []
       ]
 
-performAction :: T.PerformAction _ State Config Action
+performAction :: forall eff. T.PerformAction (Effects eff) State Config Action
 performAction = handler
   where
-    handler :: T.PerformAction _ State Config Action
     handler Login props state = do
       sessionId <- lift $ sendSync props.socket $ RPC.AuthUser
         state.loginState.loginName
@@ -149,7 +150,7 @@ performAction = handler
     handler (ChangeScreen screen) _ state = do
       emit $ \s -> s { screen = screen }
 
-spec :: T.Spec _ State _ Action
+spec :: forall eff. T.Spec (Effects eff) State Config Action
 spec = T.simpleSpec performAction render
 
 parseParams :: String -> Array (Tuple String String)
@@ -159,7 +160,7 @@ parseParams str = case stripPrefix "?" str of
     where toTuple [a, b] = Tuple a b
           toTuple _ = Tuple "" ""
 
-getState :: forall eff. Config -> Aff (webStorage :: WebStorage.WebStorage, dom :: DOM.DOM, websocket :: S.WebSocket) State
+getState :: forall eff. Config -> Aff (Effects eff) State
 getState props = do
   window <- liftEff $ DOM.window
   location <- liftEff $ DOM.location window
