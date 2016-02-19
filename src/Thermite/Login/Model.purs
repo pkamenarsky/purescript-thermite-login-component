@@ -4,6 +4,8 @@ import Data.Lens
 import Data.Either
 import Data.Maybe
 
+import DOM.HTML.Types as DOM
+
 import Prelude
 import Network.WebSockets.Sync.Socket as S
 import Web.Users.Remote.Types.Shared as RPC
@@ -67,6 +69,7 @@ type State =
   { sessionId :: Maybe RPC.SessionId
 
   , facebookLoginUrl :: String
+  , redirectingAfterLogin :: Boolean
 
   , screen :: Screen
   , regState :: RegisterState
@@ -79,6 +82,7 @@ emptyState facebookLoginUrl =
   { sessionId: Nothing
   , screen: LoginScreen
   , facebookLoginUrl
+  , redirectingAfterLogin: false
   , regState: emptyRegisterState
   , loginState: emptyLoginState
   , resetPasswordState: emptyResetPasswordState

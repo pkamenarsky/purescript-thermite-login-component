@@ -56,70 +56,87 @@ sendSync :: forall eff b. (FromJSON b) => S.Socket -> (R.Proxy b -> UserCommand)
 sendSync = R.sendSync
 
 render :: T.Render State Config Action
-render dispatch props state _ = case state.screen of
-  LoginScreen -> renderLoginScreen
-  RegisterScreen -> renderRegisterScreen
-  ResetPasswordScreen -> renderResetPasswordScreen
+render dispatch props state _
+  | state.redirectingAfterLogin = []
+  | otherwise = case state.screen of
+    LoginScreen -> renderLoginScreen
+    RegisterScreen -> renderRegisterScreen
+    ResetPasswordScreen -> renderResetPasswordScreen
 
-  where
-    renderLoginScreen = concat
-      [ textinput "Name" (loginState <<< loginName)
-      , textinput "Password" (loginState <<< loginPassword)
-      , [ R.div
-          [ RP.onClick \_ -> dispatch Login ]
-          [ R.text "Login" ]
-        , R.div
-          [ RP.onClick \_ -> dispatch (ChangeScreen ResetPasswordScreen) ]
-          [ R.text "Forgot password" ]
-        , R.a
-          [ RP.href $ state.facebookLoginUrl
+    where
+      renderLoginScreen = concat
+        [ textinput "Name" (loginState <<< loginName)
+        , textinput "Password" (loginState <<< loginPassword)
+        , [ R.div
+            [ RP.onClick \_ -> dispatch Login ]
+            [ R.text "Login" ]
+          , R.div
+            [ RP.onClick \_ -> dispatch (ChangeScreen ResetPasswordScreen) ]
+            [ R.text "Forgot password" ]
+          , R.a
+            [ RP.href $ state.facebookLoginUrl
+            ]
+            [ R.text "Login with Facebook" ]
+          , R.div
+            [ RP.onClick \_ -> dispatch (ChangeScreen RegisterScreen) ]
+            [ R.text "Register" ]
           ]
-          [ R.text "Login with Facebook" ]
-        , R.div
-          [ RP.onClick \_ -> dispatch (ChangeScreen RegisterScreen) ]
-          [ R.text "Register" ]
+        , case state.sessionId of
+            Nothing -> [ R.div [] [ R.text "Error" ] ]
+            Just _  -> [ R.div [] [ R.text "Logged in successfully" ] ]
         ]
-      , case state.sessionId of
-          Nothing -> [ R.div [] [ R.text "Error" ] ]
-          Just _  -> [ R.div [] [ R.text "Logged in successfully" ] ]
-      ]
 
-    renderRegisterScreen = concat
-      [ textinput "Name" (regState <<< regName)
-      , textinput "Email" (regState <<< regEmail)
-      , textinput "Password" (regState <<< regPassword)
-      , textinput "Repeat password" (regState <<< regRepeatPassword)
-      , [ R.div
-          [ RP.onClick \_ -> dispatch Register ]
-          [ R.text "Register" ]
+      renderRegisterScreen = concat
+        [ textinput "Name" (regState <<< regName)
+        , textinput "Email" (regState <<< regEmail)
+        , textinput "Password" (regState <<< regPassword)
+        , textinput "Repeat password" (regState <<< regRepeatPassword)
+        , [ R.div
+            [ RP.onClick \_ -> dispatch Register ]
+            [ R.text "Register" ]
+          ]
+        , case state.regState.regResult of
+            Just (Left _) -> [ R.div [] [ R.text "Error" ] ]
+            Just (Right _) ->  [ R.div [] [ R.text "User created succesfully" ] ]
+            _ ->  []
         ]
-      , case state.regState.regResult of
-          Just (Left _) -> [ R.div [] [ R.text "Error" ] ]
-          Just (Right _) ->  [ R.div [] [ R.text "User created succesfully" ] ]
-          _ ->  []
-      ]
 
-    renderResetPasswordScreen = concat
-      [ textinput "Email" (resetPasswordState <<< resetEmail)
-      , [ R.div
-          [ RP.onClick \_ -> dispatch Register ]
-          [ R.text "Reset password" ]
+      renderResetPasswordScreen = concat
+        [ textinput "Email" (resetPasswordState <<< resetEmail)
+        , [ R.div
+            [ RP.onClick \_ -> dispatch Register ]
+            [ R.text "Reset password" ]
+          ]
         ]
-      ]
 
-    textinput :: String -> Lens State State String String -> _
-    textinput text lens =
-      [ R.div [] [ R.text text ]
-      , R.input
-        [ RP.onChange \e -> dispatch $ TextChanged lens ((unsafeCoerce e).target.value)
-        , RP.value (state ^. lens)
-        ] []
-      ]
+      textinput :: String -> Lens State State String String -> _
+      textinput text lens =
+        [ R.div [] [ R.text text ]
+        , R.input
+          [ RP.onChange \e -> dispatch $ TextChanged lens ((unsafeCoerce e).target.value)
+          , RP.value (state ^. lens)
+          ] []
+        ]
 
-withSessionId :: forall eff. RPC.SessionId -> Aff (webStorage :: WebStorage.WebStorage | eff) (State -> State)
-withSessionId sessionId@(RPC.SessionId sid) = do
-  liftEff $ WebStorage.setItem WebStorage.localStorage "session" sid.unSessionId
-  return \st -> st { sessionId = Just sessionId }
+withSessionId :: forall eff. Boolean -> RPC.SessionId -> Aff (dom :: DOM.DOM, webStorage :: WebStorage.WebStorage | eff) (State -> State)
+withSessionId redirect sessionId@(RPC.SessionId sid) = do
+  liftEff $ do
+    WebStorage.setItem WebStorage.localStorage "session" sid.unSessionId
+
+    -- redirect to root
+    window <- liftEff $ DOM.window
+    location <- liftEff $ DOM.location window
+
+    href <- WebStorage.getItem WebStorage.localStorage "href-before-login"
+    WebStorage.removeItem WebStorage.localStorage "href-before-login"
+
+    case href of
+      Just href -> DOM.replace href location
+      Nothing -> return unit
+
+    if redirect
+      then return \st -> st { redirectingAfterLogin = true }
+      else return \st -> st { sessionId = Just sessionId }
 
 performAction :: forall eff. T.PerformAction (Effects eff) State Config Action
 performAction = handler
@@ -131,7 +148,7 @@ performAction = handler
         props.sessionLength
 
       case sessionId of
-        Just sessionId -> lift (withSessionId sessionId) >>= emit
+        Just sessionId -> lift (withSessionId false sessionId) >>= emit
         Nothing -> return unit
     handler Register props state = do
       r <- lift $ sendSync props.socket $ RPC.CreateUser (RPC.User
@@ -177,15 +194,18 @@ getState props = do
   if hash == "#" ++ props.redirectUrl
     then do
       token <- sendSync props.socket (RPC.AuthFacebook (origin ++ pathname ++ "#" ++ props.redirectUrl) (parseParams search) props.sessionLength)
-      -- redirect to root
-      liftEff $ DOM.setHash "" location
+
       case token of
         Left _ -> stateWithLoginUrl
         Right sessionId -> do
-          with <- withSessionId sessionId
+          with <- withSessionId true sessionId
           return $ with stateWithoutLoginUrl
     else do
       session <- liftEff $ WebStorage.getItem WebStorage.localStorage "session"
       case session of
         Just session -> return $ stateWithoutLoginUrl { sessionId = Just $ RPC.SessionId { unSessionId: session } }
-        Nothing -> stateWithLoginUrl
+        Nothing -> do
+          liftEff $ do
+            href <- liftEff $ DOM.href location
+            WebStorage.setItem WebStorage.localStorage "href-before-login" href
+          stateWithLoginUrl
