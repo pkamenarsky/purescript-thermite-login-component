@@ -17,6 +17,7 @@ import Global
 
 import Control.Alt
 import Control.Apply
+import Control.Bind
 import Control.Coroutine (emit)
 import Control.Monad.Aff
 import Control.Monad.Eff
@@ -115,6 +116,11 @@ render dispatch props state _ = case state.screen of
         ] []
       ]
 
+withSessionId :: forall eff. RPC.SessionId -> Aff (webStorage :: WebStorage.WebStorage | eff) (State -> State)
+withSessionId sessionId@(RPC.SessionId sid) = do
+  liftEff $ WebStorage.setItem WebStorage.localStorage "session" sid.unSessionId
+  return \st -> st { sessionId = Just sessionId }
+
 performAction :: forall eff. T.PerformAction (Effects eff) State Config Action
 performAction = handler
   where
@@ -124,10 +130,8 @@ performAction = handler
         state.loginState.loginPassword
         props.sessionLength
 
-      emit \st -> st { sessionId = sessionId }
-
       case sessionId of
-        Just (RPC.SessionId sid) -> lift $ liftEff $ WebStorage.setItem WebStorage.localStorage "session" sid.unSessionId
+        Just sessionId -> lift (withSessionId sessionId) >>= emit
         Nothing -> return unit
     handler Register props state = do
       r <- lift $ sendSync props.socket $ RPC.CreateUser (RPC.User
@@ -173,9 +177,13 @@ getState props = do
   if hash == "#" ++ props.redirectUrl
     then do
       token <- sendSync props.socket (RPC.AuthFacebook (origin ++ pathname ++ "#" ++ props.redirectUrl) (parseParams search) props.sessionLength)
+      -- redirect to root
+      liftEff $ DOM.setHash "" location
       case token of
         Left _ -> stateWithLoginUrl
-        Right sessionId -> return $ stateWithoutLoginUrl { sessionId = Just sessionId }
+        Right sessionId -> do
+          with <- withSessionId sessionId
+          return $ with stateWithoutLoginUrl
     else do
       session <- liftEff $ WebStorage.getItem WebStorage.localStorage "session"
       case session of
