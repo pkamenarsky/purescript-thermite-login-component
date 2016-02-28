@@ -10,20 +10,22 @@ import Prelude
 import Network.WebSockets.Sync.Socket as S
 import Web.Users.Remote.Types.Shared as RPC
 
-data Action =
+data Action userdata =
     Login
   | Register
   | ResetPassword
 
   | ChangeScreen Screen
-  | TextChanged (Lens State State String String) String
+  | TextChanged (Lens (State userdata) (State userdata) String String) String
 
 data Screen = LoginScreen | RegisterScreen | ResetPasswordScreen
 
-type Config =
+type Config userdata =
   { redirectUrl :: String
+  , facebookLoginUrl :: String
   , socket :: S.Socket
   , sessionLength :: Int
+  , defaultUserData :: userdata
   }
 
 type RegisterState =
@@ -65,23 +67,21 @@ emptyResetPasswordState =
   { resetEmail: ""
   }
 
-type State =
+type State userdata =
   { sessionId :: Maybe RPC.SessionId
-
-  , facebookLoginUrl :: String
+  , sessionUser :: Maybe (RPC.User userdata)
   , redirectingAfterLogin :: Boolean
-
   , screen :: Screen
   , regState :: RegisterState
   , loginState :: LoginState
   , resetPasswordState :: ResetPasswordState
   }
 
-emptyState :: String -> State
-emptyState facebookLoginUrl =
+emptyState :: forall userdata. State userdata
+emptyState =
   { sessionId: Nothing
+  , sessionUser: Nothing
   , screen: LoginScreen
-  , facebookLoginUrl
   , redirectingAfterLogin: false
   , regState: emptyRegisterState
   , loginState: emptyLoginState

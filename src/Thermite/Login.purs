@@ -1,4 +1,4 @@
-module Thermite.Login (spec, getState) where
+module Thermite.Login (spec, getConfig, getState) where
 
 import Prelude
 
@@ -55,7 +55,7 @@ type Effects eff = (webStorage :: WebStorage.WebStorage, dom :: DOM.DOM, websock
 sendSync :: forall eff b. (FromJSON b) => S.Socket -> (R.Proxy b -> UserCommand) -> Aff (websocket :: S.WebSocket | eff) b
 sendSync = R.sendSync
 
-render :: T.Render State Config Action
+render :: forall userdata. T.Render (State userdata) (Config userdata) (Action userdata)
 render dispatch props state _
   | state.redirectingAfterLogin = []
   | otherwise = case state.screen of
@@ -74,7 +74,7 @@ render dispatch props state _
             [ RP.onClick \_ -> dispatch (ChangeScreen ResetPasswordScreen) ]
             [ R.text "Forgot password" ]
           , R.a
-            [ RP.href $ state.facebookLoginUrl
+            [ RP.href $ props.facebookLoginUrl
             ]
             [ R.text "Login with Facebook" ]
           , R.div
@@ -109,7 +109,7 @@ render dispatch props state _
           ]
         ]
 
-      textinput :: String -> Lens State State String String -> _
+      textinput :: String -> Lens (State userdata) (State userdata) String String -> _
       textinput text lens =
         [ R.div [] [ R.text text ]
         , R.input
@@ -118,7 +118,7 @@ render dispatch props state _
           ] []
         ]
 
-withSessionId :: forall eff. Boolean -> RPC.SessionId -> Aff (dom :: DOM.DOM, webStorage :: WebStorage.WebStorage | eff) (State -> State)
+withSessionId :: forall userdata eff. Boolean -> RPC.SessionId -> Aff (dom :: DOM.DOM, webStorage :: WebStorage.WebStorage | eff) (State userdata -> State userdata)
 withSessionId redirect sessionId@(RPC.SessionId sid) = do
   liftEff $ do
     WebStorage.setItem WebStorage.localStorage "session" sid.unSessionId
@@ -138,7 +138,7 @@ withSessionId redirect sessionId@(RPC.SessionId sid) = do
       then return \st -> st { redirectingAfterLogin = true }
       else return \st -> st { sessionId = Just sessionId }
 
-performAction :: forall eff. T.PerformAction (Effects eff) State Config Action
+performAction :: forall userdata eff. T.PerformAction (Effects eff) (State userdata) (Config userdata) (Action userdata)
 performAction = handler
   where
     handler Login props state = do
@@ -167,7 +167,7 @@ performAction = handler
     handler (ChangeScreen screen) _ state = do
       emit $ \s -> s { screen = screen }
 
-spec :: forall eff. T.Spec (Effects eff) State Config Action
+spec :: forall userdata eff. T.Spec (Effects eff) (State userdata) (Config userdata) (Action userdata)
 spec = T.simpleSpec performAction render
 
 parseParams :: String -> Array (Tuple String String)
@@ -177,7 +177,30 @@ parseParams str = case stripPrefix "?" str of
     where toTuple [a, b] = Tuple a b
           toTuple _ = Tuple "" ""
 
-getState :: forall eff. Config -> Aff (Effects eff) State
+getConfig :: forall userdata eff.
+               { redirectUrl :: String
+               , socket :: S.Socket
+               , sessionLength :: Int
+               , defaultUserData :: userdata
+               }
+             -> Aff (Effects eff) (Config userdata)
+getConfig props = do
+  window <- liftEff $ DOM.window
+  location <- liftEff $ DOM.location window
+  origin <- liftEff $ DOM.origin location
+  pathname <- liftEff $ DOM.pathname location
+
+  facebookLoginUrl <- sendSync props.socket (RPC.AuthFacebookUrl (encodeURIComponent $ origin ++ pathname ++ "#" ++ props.redirectUrl) [])
+
+  return
+    { redirectUrl: props.redirectUrl
+    , socket: props.socket
+    , sessionLength: props.sessionLength
+    , defaultUserData: props.defaultUserData
+    , facebookLoginUrl
+    }
+
+getState :: forall userdata eff. (Config userdata) -> Aff (Effects eff) (Maybe (State userdata))
 getState props = do
   window <- liftEff $ DOM.window
   location <- liftEff $ DOM.location window
@@ -186,26 +209,21 @@ getState props = do
   hash <- liftEff $ DOM.hash location
   search <- liftEff $ DOM.search location
 
-  let stateWithLoginUrl = do
-        facebookLoginUrl <- sendSync props.socket (RPC.AuthFacebookUrl (encodeURIComponent $ origin ++ pathname ++ "#" ++ props.redirectUrl) [])
-        return $ emptyState facebookLoginUrl
-      stateWithoutLoginUrl = emptyState ""
-
   if hash == "#" ++ props.redirectUrl
     then do
       token <- sendSync props.socket (RPC.AuthFacebook (origin ++ pathname ++ "#" ++ props.redirectUrl) (parseParams search) props.sessionLength)
 
       case token of
-        Left _ -> stateWithLoginUrl
+        Left _ -> return Nothing
         Right sessionId -> do
           with <- withSessionId true sessionId
-          return $ with stateWithoutLoginUrl
+          return $ Just $ with emptyState
     else do
       session <- liftEff $ WebStorage.getItem WebStorage.localStorage "session"
       case session of
-        Just session -> return $ stateWithoutLoginUrl { sessionId = Just $ RPC.SessionId { unSessionId: session } }
+        Just session -> return $ Just $ emptyState { sessionId = Just $ RPC.SessionId { unSessionId: session } }
         Nothing -> do
           liftEff $ do
             href <- liftEff $ DOM.href location
             WebStorage.setItem WebStorage.localStorage "href-before-login" href
-          stateWithLoginUrl
+          return Nothing

@@ -6,25 +6,25 @@ import Data.Either (Either(..))
 import Thermite.Login.Model
 
 
-_Login :: PrismP Action Unit
+_Login :: forall userdata. PrismP (Action userdata) Unit
 _Login = prism (const Login) unwrap
   where
   unwrap Login = Right unit
   unwrap y = Left y
 
-_Register :: PrismP Action Unit
+_Register :: forall userdata. PrismP (Action userdata) Unit
 _Register = prism (const Register) unwrap
   where
   unwrap Register = Right unit
   unwrap y = Left y
 
-_ResetPassword :: PrismP Action Unit
+_ResetPassword :: forall userdata. PrismP (Action userdata) Unit
 _ResetPassword = prism (const ResetPassword) unwrap
   where
   unwrap ResetPassword = Right unit
   unwrap y = Left y
 
-_ChangeScreen :: PrismP Action Screen
+_ChangeScreen :: forall userdata. PrismP (Action userdata) Screen
 _ChangeScreen = prism ChangeScreen unwrap
   where
   unwrap (ChangeScreen x) = Right x
@@ -50,6 +50,9 @@ _ResetPasswordScreen = prism (const ResetPasswordScreen) unwrap
 
 redirectUrl :: forall a b r. Lens { "redirectUrl" :: a | r } { "redirectUrl" :: b | r } a b
 redirectUrl = lens _."redirectUrl" (_ { "redirectUrl" = _ })
+
+facebookLoginUrl :: forall a b r. Lens { "facebookLoginUrl" :: a | r } { "facebookLoginUrl" :: b | r } a b
+facebookLoginUrl = lens _."facebookLoginUrl" (_ { "facebookLoginUrl" = _ })
 
 socket :: forall a b r. Lens { "socket" :: a | r } { "socket" :: b | r } a b
 socket = lens _."socket" (_ { "socket" = _ })
@@ -84,8 +87,11 @@ resetEmail = lens _."resetEmail" (_ { "resetEmail" = _ })
 sessionId :: forall a b r. Lens { "sessionId" :: a | r } { "sessionId" :: b | r } a b
 sessionId = lens _."sessionId" (_ { "sessionId" = _ })
 
-facebookLoginUrl :: forall a b r. Lens { "facebookLoginUrl" :: a | r } { "facebookLoginUrl" :: b | r } a b
-facebookLoginUrl = lens _."facebookLoginUrl" (_ { "facebookLoginUrl" = _ })
+sessionUser :: forall a b r. Lens { "sessionUser" :: a | r } { "sessionUser" :: b | r } a b
+sessionUser = lens _."sessionUser" (_ { "sessionUser" = _ })
+
+redirectingAfterLogin :: forall a b r. Lens { "redirectingAfterLogin" :: a | r } { "redirectingAfterLogin" :: b | r } a b
+redirectingAfterLogin = lens _."redirectingAfterLogin" (_ { "redirectingAfterLogin" = _ })
 
 screen :: forall a b r. Lens { "screen" :: a | r } { "screen" :: b | r } a b
 screen = lens _."screen" (_ { "screen" = _ })
