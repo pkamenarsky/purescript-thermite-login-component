@@ -55,7 +55,7 @@ type Effects eff = (webStorage :: WebStorage.WebStorage, dom :: DOM.DOM, websock
 sendSync :: forall eff b. (FromJSON b) => S.Socket -> (R.Proxy b -> UserCommand) -> Aff (websocket :: S.WebSocket | eff) b
 sendSync = R.sendSync
 
-render :: forall userdata. T.Render (State userdata) (Config userdata) (Action userdata)
+render :: forall uid userdata. T.Render (State uid userdata) (Config userdata) (Action uid userdata)
 render dispatch props state _
   | state.redirectingAfterLogin = []
   | otherwise = case state.screen of
@@ -109,7 +109,7 @@ render dispatch props state _
           ]
         ]
 
-      textinput :: String -> Lens (State userdata) (State userdata) String String -> _
+      textinput :: String -> Lens (State uid userdata) (State uid userdata) String String -> _
       textinput text lens =
         [ R.div [] [ R.text text ]
         , R.input
@@ -118,7 +118,7 @@ render dispatch props state _
           ] []
         ]
 
-withSessionId :: forall userdata eff. Boolean -> RPC.SessionId -> Aff (dom :: DOM.DOM, webStorage :: WebStorage.WebStorage | eff) (State userdata -> State userdata)
+withSessionId :: forall uid userdata eff. Boolean -> RPC.SessionId -> Aff (dom :: DOM.DOM, webStorage :: WebStorage.WebStorage | eff) (State uid userdata -> State uid userdata)
 withSessionId redirect sessionId@(RPC.SessionId sid) = do
   liftEff $ do
     WebStorage.setItem WebStorage.localStorage "session" sid.unSessionId
@@ -138,7 +138,7 @@ withSessionId redirect sessionId@(RPC.SessionId sid) = do
       then return \st -> st { redirectingAfterLogin = true }
       else return \st -> st { sessionId = Just sessionId }
 
-performAction :: forall userdata eff. T.PerformAction (Effects eff) (State userdata) (Config userdata) (Action userdata)
+performAction :: forall uid userdata eff. T.PerformAction (Effects eff) (State uid userdata) (Config userdata) (Action uid userdata)
 performAction = handler
   where
     handler Login props state = do
@@ -167,7 +167,7 @@ performAction = handler
     handler (ChangeScreen screen) _ state = do
       emit $ \s -> s { screen = screen }
 
-spec :: forall userdata eff. T.Spec (Effects eff) (State userdata) (Config userdata) (Action userdata)
+spec :: forall uid userdata eff. T.Spec (Effects eff) (State uid userdata) (Config userdata) (Action uid userdata)
 spec = T.simpleSpec performAction render
 
 parseParams :: String -> Array (Tuple String String)
@@ -200,7 +200,7 @@ getConfig props = do
     , facebookLoginUrl
     }
 
-getState :: forall userdata eff. (Config userdata) -> Aff (Effects eff) (Maybe (State userdata))
+getState :: forall uid userdata eff. (Config userdata) -> Aff (Effects eff) (Maybe (State uid userdata))
 getState props = do
   window <- liftEff $ DOM.window
   location <- liftEff $ DOM.location window

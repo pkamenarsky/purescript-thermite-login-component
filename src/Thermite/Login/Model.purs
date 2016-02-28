@@ -10,13 +10,13 @@ import Prelude
 import Network.WebSockets.Sync.Socket as S
 import Web.Users.Remote.Types.Shared as RPC
 
-data Action userdata =
+data Action uid userdata =
     Login
   | Register
   | ResetPassword
 
   | ChangeScreen Screen
-  | TextChanged (Lens (State userdata) (State userdata) String String) String
+  | TextChanged (Lens (State uid userdata) (State uid userdata) String String) String
 
 data Screen = LoginScreen | RegisterScreen | ResetPasswordScreen
 
@@ -67,8 +67,9 @@ emptyResetPasswordState =
   { resetEmail: ""
   }
 
-type State userdata =
+type State uid userdata =
   { sessionId :: Maybe RPC.SessionId
+  , userId :: Maybe uid
   , sessionUser :: Maybe (RPC.User userdata)
   , redirectingAfterLogin :: Boolean
   , screen :: Screen
@@ -77,10 +78,11 @@ type State userdata =
   , resetPasswordState :: ResetPasswordState
   }
 
-emptyState :: forall userdata. State userdata
+emptyState :: forall uid userdata. State uid userdata
 emptyState =
   { sessionId: Nothing
   , sessionUser: Nothing
+  , userId: Nothing
   , screen: LoginScreen
   , redirectingAfterLogin: false
   , regState: emptyRegisterState

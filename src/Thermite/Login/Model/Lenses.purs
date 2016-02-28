@@ -6,25 +6,25 @@ import Data.Either (Either(..))
 import Thermite.Login.Model
 
 
-_Login :: forall userdata. PrismP (Action userdata) Unit
+_Login :: forall userdata uid. PrismP (Action uid userdata) Unit
 _Login = prism (const Login) unwrap
   where
   unwrap Login = Right unit
   unwrap y = Left y
 
-_Register :: forall userdata. PrismP (Action userdata) Unit
+_Register :: forall userdata uid. PrismP (Action uid userdata) Unit
 _Register = prism (const Register) unwrap
   where
   unwrap Register = Right unit
   unwrap y = Left y
 
-_ResetPassword :: forall userdata. PrismP (Action userdata) Unit
+_ResetPassword :: forall userdata uid. PrismP (Action uid userdata) Unit
 _ResetPassword = prism (const ResetPassword) unwrap
   where
   unwrap ResetPassword = Right unit
   unwrap y = Left y
 
-_ChangeScreen :: forall userdata. PrismP (Action userdata) Screen
+_ChangeScreen :: forall userdata uid. PrismP (Action uid userdata) Screen
 _ChangeScreen = prism ChangeScreen unwrap
   where
   unwrap (ChangeScreen x) = Right x
@@ -60,6 +60,9 @@ socket = lens _."socket" (_ { "socket" = _ })
 sessionLength :: forall a b r. Lens { "sessionLength" :: a | r } { "sessionLength" :: b | r } a b
 sessionLength = lens _."sessionLength" (_ { "sessionLength" = _ })
 
+defaultUserData :: forall a b r. Lens { "defaultUserData" :: a | r } { "defaultUserData" :: b | r } a b
+defaultUserData = lens _."defaultUserData" (_ { "defaultUserData" = _ })
+
 regName :: forall a b r. Lens { "regName" :: a | r } { "regName" :: b | r } a b
 regName = lens _."regName" (_ { "regName" = _ })
 
@@ -86,6 +89,9 @@ resetEmail = lens _."resetEmail" (_ { "resetEmail" = _ })
 
 sessionId :: forall a b r. Lens { "sessionId" :: a | r } { "sessionId" :: b | r } a b
 sessionId = lens _."sessionId" (_ { "sessionId" = _ })
+
+userId :: forall a b r. Lens { "userId" :: a | r } { "userId" :: b | r } a b
+userId = lens _."userId" (_ { "userId" = _ })
 
 sessionUser :: forall a b r. Lens { "sessionUser" :: a | r } { "sessionUser" :: b | r } a b
 sessionUser = lens _."sessionUser" (_ { "sessionUser" = _ })
