@@ -47,13 +47,9 @@ import Unsafe.Coerce
 import Thermite.Login.Model
 import Thermite.Login.Model.Lenses
 
-type UserCommand = RPC.UserCommand String Int RPC.SessionId
+type UserCommand userdata = RPC.UserCommand userdata Int RPC.SessionId
 
 type Effects eff = (webStorage :: WebStorage.WebStorage, dom :: DOM.DOM, websocket :: S.WebSocket | eff)
-
--- specialized sendSync
-sendSync :: forall eff b. (FromJSON b) => S.Socket -> (R.Proxy b -> UserCommand) -> Aff (websocket :: S.WebSocket | eff) b
-sendSync = R.sendSync
 
 render :: forall uid userdata. T.Render (State uid userdata) (Config userdata) (Action uid userdata)
 render dispatch props state _
@@ -138,9 +134,15 @@ withSessionId redirect sessionId@(RPC.SessionId sid) = do
       then return \st -> st { redirectingAfterLogin = true }
       else return \st -> st { sessionId = Just sessionId }
 
-performAction :: forall uid userdata eff. T.PerformAction (Effects eff) (State uid userdata) (Config userdata) (Action uid userdata)
+performAction :: forall uid userdata eff. (ToJSON userdata)
+              => T.PerformAction (Effects eff) (State uid userdata) (Config userdata) (Action uid userdata)
 performAction = handler
   where
+    -- specialized sendSync
+    sendSync :: forall b. (FromJSON b) => S.Socket -> (R.Proxy b -> UserCommand userdata) -> Aff (Effects eff) b
+    sendSync = R.sendSync
+
+    handler :: T.PerformAction (Effects eff) (State uid userdata) (Config userdata) (Action uid userdata)
     handler Login props state = do
       sessionId <- lift $ sendSync props.socket $ RPC.AuthUser
         state.loginState.loginName
@@ -156,7 +158,7 @@ performAction = handler
         , u_email: state.regState.regEmail
         , u_password: RPC.PasswordHidden
         , u_active: true
-        , u_more: "none" }) state.regState.regPassword
+        , u_more: props.defaultUserData }) state.regState.regPassword
       emit $ case r of
         Left  _ -> set (regState <<< regResult) (Just $ Left unit)
         Right _ -> set (regState <<< regResult) (Just $ Right unit)
@@ -167,7 +169,7 @@ performAction = handler
     handler (ChangeScreen screen) _ state = do
       emit $ \s -> s { screen = screen }
 
-spec :: forall uid userdata eff. T.Spec (Effects eff) (State uid userdata) (Config userdata) (Action uid userdata)
+spec :: forall uid userdata eff. (ToJSON userdata) => T.Spec (Effects eff) (State uid userdata) (Config userdata) (Action uid userdata)
 spec = T.simpleSpec performAction render
 
 parseParams :: String -> Array (Tuple String String)
@@ -177,18 +179,22 @@ parseParams str = case stripPrefix "?" str of
     where toTuple [a, b] = Tuple a b
           toTuple _ = Tuple "" ""
 
-getConfig :: forall userdata eff.
-               { redirectUrl :: String
-               , socket :: S.Socket
-               , sessionLength :: Int
-               , defaultUserData :: userdata
-               }
-             -> Aff (Effects eff) (Config userdata)
+getConfig :: forall userdata eff. (ToJSON userdata)
+          => { redirectUrl :: String
+             , socket :: S.Socket
+             , sessionLength :: Int
+             , defaultUserData :: userdata
+             }
+         -> Aff (Effects eff) (Config userdata)
 getConfig props = do
   window <- liftEff $ DOM.window
   location <- liftEff $ DOM.location window
   origin <- liftEff $ DOM.origin location
   pathname <- liftEff $ DOM.pathname location
+
+  let -- specialized sendSync
+      sendSync :: forall b. (FromJSON b) => S.Socket -> (R.Proxy b -> UserCommand userdata) -> Aff (Effects eff) b
+      sendSync = R.sendSync
 
   facebookLoginUrl <- sendSync props.socket (RPC.AuthFacebookUrl (encodeURIComponent $ origin ++ pathname ++ "#" ++ props.redirectUrl) [])
 
@@ -200,7 +206,7 @@ getConfig props = do
     , facebookLoginUrl
     }
 
-getState :: forall uid userdata eff. (Config userdata) -> Aff (Effects eff) (Maybe (State uid userdata))
+getState :: forall uid userdata eff. (ToJSON userdata) => Config userdata -> Aff (Effects eff) (Maybe (State uid userdata))
 getState props = do
   window <- liftEff $ DOM.window
   location <- liftEff $ DOM.location window
@@ -208,6 +214,10 @@ getState props = do
   pathname <- liftEff $ DOM.pathname location
   hash <- liftEff $ DOM.hash location
   search <- liftEff $ DOM.search location
+
+  let -- specialized sendSync
+      sendSync :: forall b. (FromJSON b) => S.Socket -> (R.Proxy b -> UserCommand userdata) -> Aff (Effects eff) b
+      sendSync = R.sendSync
 
   if hash == "#" ++ props.redirectUrl
     then do
