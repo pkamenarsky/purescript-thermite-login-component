@@ -12,6 +12,7 @@ import Web.Users.Remote.Types.Shared as RPC
 
 data Action uid userdata =
     Login
+  | LoginWithFacebook
   | Register
   | ResetPassword
 
@@ -22,7 +23,6 @@ data Screen = LoginScreen | RegisterScreen | ResetPasswordScreen
 
 type Config userdata =
   { redirectUrl :: String
-  , facebookLoginUrl :: String
   , socket :: S.Socket
   , sessionLength :: Int
   , defaultUserData :: userdata
