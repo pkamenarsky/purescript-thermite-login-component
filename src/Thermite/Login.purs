@@ -1,4 +1,4 @@
-module Thermite.Login (spec, getConfig, getState) where
+module Thermite.Login (spec, getConfig, getState, module Web.Users.Remote.Types.Shared) where
 
 import Prelude
 
