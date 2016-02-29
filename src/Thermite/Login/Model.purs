@@ -50,12 +50,14 @@ emptyRegisterState =
 type LoginState =
   { loginName :: String
   , loginPassword :: String
+  , loginError :: Boolean
   }
 
 emptyLoginState :: LoginState
 emptyLoginState =
   { loginName: ""
   , loginPassword: ""
+  , loginError: false
   }
 
 type ResetPasswordState =

@@ -12,6 +12,12 @@ _Login = prism (const Login) unwrap
   unwrap Login = Right unit
   unwrap y = Left y
 
+_LoginWithFacebook :: forall userdata uid. PrismP (Action uid userdata) Unit
+_LoginWithFacebook = prism (const LoginWithFacebook) unwrap
+  where
+  unwrap LoginWithFacebook = Right unit
+  unwrap y = Left y
+
 _Register :: forall userdata uid. PrismP (Action uid userdata) Unit
 _Register = prism (const Register) unwrap
   where
@@ -51,9 +57,6 @@ _ResetPasswordScreen = prism (const ResetPasswordScreen) unwrap
 redirectUrl :: forall a b r. Lens { "redirectUrl" :: a | r } { "redirectUrl" :: b | r } a b
 redirectUrl = lens _."redirectUrl" (_ { "redirectUrl" = _ })
 
-facebookLoginUrl :: forall a b r. Lens { "facebookLoginUrl" :: a | r } { "facebookLoginUrl" :: b | r } a b
-facebookLoginUrl = lens _."facebookLoginUrl" (_ { "facebookLoginUrl" = _ })
-
 socket :: forall a b r. Lens { "socket" :: a | r } { "socket" :: b | r } a b
 socket = lens _."socket" (_ { "socket" = _ })
 
@@ -83,6 +86,9 @@ loginName = lens _."loginName" (_ { "loginName" = _ })
 
 loginPassword :: forall a b r. Lens { "loginPassword" :: a | r } { "loginPassword" :: b | r } a b
 loginPassword = lens _."loginPassword" (_ { "loginPassword" = _ })
+
+loginError :: forall a b r. Lens { "loginError" :: a | r } { "loginError" :: b | r } a b
+loginError = lens _."loginError" (_ { "loginError" = _ })
 
 resetEmail :: forall a b r. Lens { "resetEmail" :: a | r } { "resetEmail" :: b | r } a b
 resetEmail = lens _."resetEmail" (_ { "resetEmail" = _ })

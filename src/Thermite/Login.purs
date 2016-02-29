@@ -47,6 +47,8 @@ import Unsafe.Coerce
 import Thermite.Login.Model
 import Thermite.Login.Model.Lenses
 
+import Debug.Trace
+
 type UserCommand userdata = RPC.UserCommand userdata Int RPC.SessionId
 
 type Effects eff = (webStorage :: WebStorage.WebStorage, dom :: DOM.DOM, websocket :: S.WebSocket | eff)
@@ -89,30 +91,37 @@ render dispatch props state _
             ]
             [ R.text "Login with Facebook" ]
           ]
-        , case state.sessionId of
-            Nothing -> [ R.div [] [ R.text "" ] ]
-            Just _  -> [ R.div [] [ R.text "Logged in successfully" ] ]
+        , if state.loginState.loginError
+             then [ R.div
+                    [ RP.className "login-error" ]
+                    [ R.text "User or password incorrect" ]
+                  ]
+             else [ ]
         ]
 
       renderRegisterScreen = concat
         [ textinput "Name" (regState <<< regName)
         , textinput "Email" (regState <<< regEmail)
-        , textinput "Password" (regState <<< regPassword)
-        , textinput "Repeat password" (regState <<< regRepeatPassword)
+        , textinput' true "Password" (regState <<< regPassword)
+        , textinput' true "Repeat password" (regState <<< regRepeatPassword)
         , [ R.div
-            [ RP.onClick \_ -> dispatch Register ]
+            [ RP.onClick \_ -> dispatch Register
+            , RP.className "login-button-register"
+            ]
             [ R.text "Register" ]
           ]
         , case state.regState.regResult of
-            Just (Left _) -> [ R.div [] [ R.text "Error" ] ]
-            Just (Right _) ->  [ R.div [] [ R.text "User created succesfully" ] ]
+            Just (Left _) -> [ R.div [ RP.className "login-register-error" ] [ R.text "Username or email already taken" ] ]
+            Just (Right _) ->  [ R.div [ RP.className "login-register-success" ] [ R.text "User created succesfully" ] ]
             _ ->  []
         ]
 
       renderResetPasswordScreen = concat
         [ textinput "Email" (resetPasswordState <<< resetEmail)
         , [ R.div
-            [ RP.onClick \_ -> dispatch Register ]
+            [ RP.onClick \_ -> dispatch ResetPassword
+            , RP.className "login-button-reset-password"
+            ]
             [ R.text "Reset password" ]
           ]
         ]
@@ -167,7 +176,7 @@ performAction = handler
 
       case sessionId of
         Just sessionId -> lift (withSessionId false sessionId) >>= emit
-        Nothing -> return unit
+        Nothing -> emit $ set (loginState <<< loginError) true
     handler LoginWithFacebook props state = lift $ do
       window <- liftEff $ DOM.window
       location <- liftEff $ DOM.location window
@@ -192,7 +201,7 @@ performAction = handler
         Left  _ -> set (regState <<< regResult) (Just $ Left unit)
         Right _ -> set (regState <<< regResult) (Just $ Right unit)
     handler ResetPassword _ state = do
-      return unit
+      emit $ set screen LoginScreen
     handler (TextChanged lens v) _ state = do
       emit $ set lens v
     handler (ChangeScreen screen) _ state = do
