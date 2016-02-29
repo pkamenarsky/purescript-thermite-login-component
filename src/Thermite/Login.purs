@@ -82,13 +82,15 @@ render dispatch props state _
               ]
               [ R.text "Register" ]
             ]
+          , R.div [ RP.className "login-divider" ] []
           , R.div
             [ RP.onClick \_ -> dispatch LoginWithFacebook
+            , RP.className "login-button-facebook"
             ]
             [ R.text "Login with Facebook" ]
           ]
         , case state.sessionId of
-            Nothing -> [ R.div [] [ R.text "Error" ] ]
+            Nothing -> [ R.div [] [ R.text "" ] ]
             Just _  -> [ R.div [] [ R.text "Logged in successfully" ] ]
         ]
 
