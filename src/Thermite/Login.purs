@@ -190,6 +190,10 @@ performAction = handler
 
       liftEff $ DOM.replace facebookLoginUrl location
 
+    handler Logout props state = do
+      lift $ liftEff $ WebStorage.removeItem WebStorage.localStorage "session"
+      emit \_ -> emptyState
+
     handler Register props state = do
       r <- lift $ sendSync props.socket $ RPC.CreateUser (RPC.User
         { u_name: state.regState.regName

@@ -13,6 +13,7 @@ import Web.Users.Remote.Types.Shared as RPC
 data Action uid userdata =
     Login
   | LoginWithFacebook
+  | Logout
   | Register
   | ResetPassword
 
