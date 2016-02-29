@@ -55,27 +55,34 @@ render :: forall uid userdata. T.Render (State uid userdata) (Config userdata) (
 render dispatch props state _
   | state.redirectingAfterLogin = []
   | otherwise = case state.screen of
-    LoginScreen -> renderLoginScreen
-    RegisterScreen -> renderRegisterScreen
-    ResetPasswordScreen -> renderResetPasswordScreen
+    LoginScreen -> container renderLoginScreen
+    RegisterScreen -> container renderRegisterScreen
+    ResetPasswordScreen -> container renderResetPasswordScreen
 
     where
+      container es = [ R.div [ RP.className "login-container" ] es ]
       renderLoginScreen = concat
         [ textinput "Name" (loginState <<< loginName)
-        , textinput "Password" (loginState <<< loginPassword)
+        , textinput' true "Password" (loginState <<< loginPassword)
         , [ R.div
-            [ RP.onClick \_ -> dispatch Login ]
+            [ RP.onClick \_ -> dispatch Login
+            , RP.className "login-button-login"
+            ]
             [ R.text "Login" ]
           , R.div
-            [ RP.onClick \_ -> dispatch (ChangeScreen ResetPasswordScreen) ]
+            [ RP.onClick \_ -> dispatch (ChangeScreen ResetPasswordScreen)
+            , RP.className "login-text-forgot-password"
+            ]
             [ R.text "Forgot password" ]
+          , R.div
+            [ RP.onClick \_ -> dispatch (ChangeScreen RegisterScreen) ]
+            [ R.text "Register"
+            , RP.className "login-text-register"
+            ]
           , R.div
             [ RP.onClick \_ -> dispatch LoginWithFacebook
             ]
             [ R.text "Login with Facebook" ]
-          , R.div
-            [ RP.onClick \_ -> dispatch (ChangeScreen RegisterScreen) ]
-            [ R.text "Register" ]
           ]
         , case state.sessionId of
             Nothing -> [ R.div [] [ R.text "Error" ] ]
@@ -105,14 +112,18 @@ render dispatch props state _
           ]
         ]
 
-      textinput :: String -> Lens (State uid userdata) (State uid userdata) String String -> _
-      textinput text lens =
-        [ R.div [] [ R.text text ]
-        , R.input
+      textinput' :: Boolean -> String -> Lens (State uid userdata) (State uid userdata) String String -> _
+      textinput' pwd text lens =
+        [ R.input
           [ RP.onChange \e -> dispatch $ TextChanged lens ((unsafeCoerce e).target.value)
           , RP.value (state ^. lens)
+          , RP.placeholder text
+          , RP.className "login-input"
+          , if pwd then RP._type "password" else RP._type ""
           ] []
         ]
+
+      textinput = textinput' false
 
 withSessionId :: forall uid userdata eff. Boolean -> RPC.SessionId -> Aff (dom :: DOM.DOM, webStorage :: WebStorage.WebStorage | eff) (State uid userdata -> State uid userdata)
 withSessionId redirect sessionId@(RPC.SessionId sid) = do
