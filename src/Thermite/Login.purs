@@ -192,6 +192,11 @@ performAction = handler
 
     handler Logout props state = do
       lift $ liftEff $ WebStorage.removeItem WebStorage.localStorage "session"
+      case state.sessionId of
+        Just sessionId -> do
+          RPC.Ok <- lift $ sendSync props.socket (RPC.Logout sessionId)
+          return unit
+        Nothing -> return unit
       emit \_ -> emptyState
 
     handler Register props state = do
