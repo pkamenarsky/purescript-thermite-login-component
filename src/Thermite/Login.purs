@@ -70,14 +70,17 @@ render dispatch props state _
             ]
             [ R.text "Login" ]
           , R.div
-            [ RP.onClick \_ -> dispatch (ChangeScreen ResetPasswordScreen)
-            , RP.className "login-text-forgot-password"
-            ]
-            [ R.text "Forgot password" ]
-          , R.div
-            [ RP.onClick \_ -> dispatch (ChangeScreen RegisterScreen) ]
-            [ R.text "Register"
-            , RP.className "login-text-register"
+            [ RP.className "login-text-container" ]
+            [ R.div
+              [ RP.onClick \_ -> dispatch (ChangeScreen ResetPasswordScreen)
+              , RP.className "login-text-forgot-password"
+              ]
+              [ R.text "Forgot password" ]
+            , R.div
+              [ RP.onClick \_ -> dispatch (ChangeScreen RegisterScreen)
+              , RP.className "login-text-register"
+              ]
+              [ R.text "Register" ]
             ]
           , R.div
             [ RP.onClick \_ -> dispatch LoginWithFacebook
