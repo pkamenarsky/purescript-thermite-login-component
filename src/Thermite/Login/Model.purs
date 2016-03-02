@@ -120,8 +120,8 @@ emptyState =
 localeDe =
   { name: "Username"
   , password: "Passwort"
-  , repeatPassword: "Password wiederholen"
-  , resetPassword: "Password neusetzen"
+  , repeatPassword: "Passwort wiederholen"
+  , resetPassword: "Neusetzen"
   , login: "Einloggen"
   , fullName: "Name"
   , email: "Email"
