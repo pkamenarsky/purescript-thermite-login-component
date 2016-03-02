@@ -18,6 +18,12 @@ _LoginWithFacebook = prism (const LoginWithFacebook) unwrap
   unwrap LoginWithFacebook = Right unit
   unwrap y = Left y
 
+_Logout :: forall userdata uid. PrismP (Action uid userdata) Unit
+_Logout = prism (const Logout) unwrap
+  where
+  unwrap Logout = Right unit
+  unwrap y = Left y
+
 _Register :: forall userdata uid. PrismP (Action uid userdata) Unit
 _Register = prism (const Register) unwrap
   where
@@ -68,6 +74,9 @@ defaultUserData = lens _."defaultUserData" (_ { "defaultUserData" = _ })
 
 regName :: forall a b r. Lens { "regName" :: a | r } { "regName" :: b | r } a b
 regName = lens _."regName" (_ { "regName" = _ })
+
+regFullName :: forall a b r. Lens { "regFullName" :: a | r } { "regFullName" :: b | r } a b
+regFullName = lens _."regFullName" (_ { "regFullName" = _ })
 
 regEmail :: forall a b r. Lens { "regEmail" :: a | r } { "regEmail" :: b | r } a b
 regEmail = lens _."regEmail" (_ { "regEmail" = _ })

@@ -31,6 +31,7 @@ type Config userdata =
 
 type RegisterState =
   { regName :: String
+  , regFullName :: String
   , regEmail :: String
   , regPassword :: String
   , regRepeatPassword :: String
@@ -41,6 +42,7 @@ type RegisterState =
 emptyRegisterState :: RegisterState
 emptyRegisterState =
   { regName: ""
+  , regFullName: ""
   , regEmail: ""
   , regPassword: ""
   , regRepeatPassword: ""
@@ -73,7 +75,7 @@ emptyResetPasswordState =
 type State uid userdata =
   { sessionId :: Maybe RPC.SessionId
   , userId :: Maybe uid
-  , sessionUser :: Maybe (RPC.User userdata)
+  , sessionUser :: Maybe (RPC.User (RPC.UserAdditionalInfo userdata))
   , redirectingAfterLogin :: Boolean
   , screen :: Screen
   , regState :: RegisterState

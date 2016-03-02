@@ -102,6 +102,7 @@ render dispatch props state _
 
       renderRegisterScreen = concat
         [ textinput "Name" (regState <<< regName)
+        , textinput "Full Name" (regState <<< regFullName)
         , textinput "Email" (regState <<< regEmail)
         , textinput' true "Password" (regState <<< regPassword)
         , textinput' true "Repeat password" (regState <<< regRepeatPassword)
@@ -207,7 +208,11 @@ performAction = handler
         , u_email: state.regState.regEmail
         , u_password: RPC.PasswordHidden
         , u_active: true
-        , u_more: props.defaultUserData }) state.regState.regPassword
+        , u_more: RPC.UserAdditionalInfo
+          { userInfo: props.defaultUserData
+          , userAIFullName: state.regState.regFullName
+          }
+        }) state.regState.regPassword
       emit $ case r of
         Left  _ -> set (regState <<< regResult) (Just $ Left unit)
         Right _ -> set (regState <<< regResult) (Just $ Right unit)
