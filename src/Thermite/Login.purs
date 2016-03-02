@@ -113,8 +113,9 @@ render dispatch props state _
             [ R.text props.locale.register ]
           ]
         , case state.regState.regResult of
-            Just (Left _) -> [ R.div [ RP.className "login-register-error" ] [ R.text "Username or email already taken" ] ]
-            Just (Right _) ->  [ R.div [ RP.className "login-register-success" ] [ R.text "User created succesfully" ] ]
+            Just (Left RPC.UserFullNameEmptyError) -> [ R.div [ RP.className "login-register-error" ] [ R.text props.locale.errEmptyFullname ] ]
+            Just (Left _) -> [ R.div [ RP.className "login-register-error" ] [ R.text props.locale.errUserOrEmailAlreadyTaken ] ]
+            Just (Right _) ->  [ R.div [ RP.className "login-register-success" ] [ R.text props.locale.userCreatedSuccessfully ] ]
             _ ->  []
         ]
 
@@ -214,8 +215,9 @@ performAction = handler
           }
         }) state.regState.regPassword
       emit $ case r of
-        Left  _ -> set (regState <<< regResult) (Just $ Left unit)
-        Right _ -> set (regState <<< regResult) (Just $ Right unit)
+        Right (Left err) -> set (regState <<< regResult) (Just $ Left err)
+        Right (Right _) -> set (regState <<< regResult) (Just $ Right unit)
+        Left  _ -> set (regState <<< regResult) Nothing
     handler ResetPassword _ state = do
       emit $ set screen LoginScreen
     handler (TextChanged lens v) _ state = do

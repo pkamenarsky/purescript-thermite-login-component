@@ -35,7 +35,10 @@ type Locale =
   , loginWithFacebook :: String
 
   , errUserOrPasswordIncorrect :: String
+  , errUserOrEmailAlreadyTaken :: String
   , errEmptyFullname :: String
+
+  , userCreatedSuccessfully :: String
   }
 
 type Config userdata =
@@ -53,7 +56,7 @@ type RegisterState =
   , regPassword :: String
   , regRepeatPassword :: String
 
-  , regResult :: Maybe (Either Unit Unit)
+  , regResult :: Maybe (Either RPC.CreateUserExtraError Unit)
   }
 
 emptyRegisterState :: RegisterState
@@ -127,5 +130,8 @@ localeDe =
   , loginWithFacebook: "Mit Facebook einloggen"
 
   , errUserOrPasswordIncorrect: "Username oder Password falsch"
+  , errUserOrEmailAlreadyTaken: "Username oder Email existieren schon"
   , errEmptyFullname: "Name darf nicht leer sein"
+
+  , userCreatedSuccessfully: "User erfolgreich registriert"
   }
