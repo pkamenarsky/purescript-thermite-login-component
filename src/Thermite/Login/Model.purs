@@ -22,11 +22,28 @@ data Action uid userdata =
 
 data Screen = LoginScreen | RegisterScreen | ResetPasswordScreen
 
+type Locale =
+  { name :: String
+  , password :: String
+  , repeatPassword :: String
+  , resetPassword :: String
+  , login :: String
+  , fullName :: String
+  , email :: String
+  , forgotPassword :: String
+  , register :: String
+  , loginWithFacebook :: String
+
+  , errUserOrPasswordIncorrect :: String
+  , errEmptyFullname :: String
+  }
+
 type Config userdata =
   { redirectUrl :: String
   , socket :: S.Socket
   , sessionLength :: Int
   , defaultUserData :: userdata
+  , locale :: Locale
   }
 
 type RegisterState =
@@ -93,4 +110,22 @@ emptyState =
   , regState: emptyRegisterState
   , loginState: emptyLoginState
   , resetPasswordState: emptyResetPasswordState
+  }
+
+-- Locales
+
+localeDe =
+  { name: "Username"
+  , password: "Passwort"
+  , repeatPassword: "Password wiederholen"
+  , resetPassword: "Password neusetzen"
+  , login: "Einloggen"
+  , fullName: "Name"
+  , email: "Email"
+  , forgotPassword: "Passwort vergessen"
+  , register: "Registrieren"
+  , loginWithFacebook: "Mit Facebook einloggen"
+
+  , errUserOrPasswordIncorrect: "Username oder Password falsch"
+  , errEmptyFullname: "Name darf nicht leer sein"
   }

@@ -65,52 +65,52 @@ render dispatch props state _
     where
       container es = [ R.div [ RP.className "login-container" ] es ]
       renderLoginScreen = concat
-        [ textinput "Name" (loginState <<< loginName)
-        , textinput' true "Password" (loginState <<< loginPassword)
+        [ textinput props.locale.name (loginState <<< loginName)
+        , textinput' true props.locale.password (loginState <<< loginPassword)
         , [ R.div
             [ RP.onClick \_ -> dispatch Login
             , RP.className "login-button-login"
             ]
-            [ R.text "Login" ]
+            [ R.text props.locale.login ]
           , R.div
             [ RP.className "login-text-container" ]
             [ R.div
               [ RP.onClick \_ -> dispatch (ChangeScreen ResetPasswordScreen)
               , RP.className "login-text-forgot-password"
               ]
-              [ R.text "Forgot password" ]
+              [ R.text props.locale.forgotPassword ]
             , R.div
               [ RP.onClick \_ -> dispatch (ChangeScreen RegisterScreen)
               , RP.className "login-text-register"
               ]
-              [ R.text "Register" ]
+              [ R.text props.locale.register ]
             ]
           , R.div [ RP.className "login-divider" ] []
           , R.div
             [ RP.onClick \_ -> dispatch LoginWithFacebook
             , RP.className "login-button-facebook"
             ]
-            [ R.text "Login with Facebook" ]
+            [ R.text props.locale.loginWithFacebook ]
           ]
         , if state.loginState.loginError
              then [ R.div
                     [ RP.className "login-error" ]
-                    [ R.text "User or password incorrect" ]
+                    [ R.text props.locale.errUserOrPasswordIncorrect ]
                   ]
              else [ ]
         ]
 
       renderRegisterScreen = concat
-        [ textinput "Name" (regState <<< regName)
-        , textinput "Full Name" (regState <<< regFullName)
-        , textinput "Email" (regState <<< regEmail)
-        , textinput' true "Password" (regState <<< regPassword)
-        , textinput' true "Repeat password" (regState <<< regRepeatPassword)
+        [ textinput props.locale.name (regState <<< regName)
+        , textinput props.locale.fullName (regState <<< regFullName)
+        , textinput props.locale.email (regState <<< regEmail)
+        , textinput' true props.locale.password (regState <<< regPassword)
+        , textinput' true props.locale.repeatPassword (regState <<< regRepeatPassword)
         , [ R.div
             [ RP.onClick \_ -> dispatch Register
             , RP.className "login-button-register"
             ]
-            [ R.text "Register" ]
+            [ R.text props.locale.register ]
           ]
         , case state.regState.regResult of
             Just (Left _) -> [ R.div [ RP.className "login-register-error" ] [ R.text "Username or email already taken" ] ]
@@ -119,12 +119,12 @@ render dispatch props state _
         ]
 
       renderResetPasswordScreen = concat
-        [ textinput "Email" (resetPasswordState <<< resetEmail)
+        [ textinput props.locale.email (resetPasswordState <<< resetEmail)
         , [ R.div
             [ RP.onClick \_ -> dispatch ResetPassword
             , RP.className "login-button-reset-password"
             ]
-            [ R.text "Reset password" ]
+            [ R.text props.locale.resetPassword ]
           ]
         ]
 
