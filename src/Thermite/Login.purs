@@ -22,6 +22,7 @@ import Control.Coroutine (emit)
 import Control.Monad.Aff
 import Control.Monad.Eff
 import Control.Monad.Eff.Class
+import Control.Monad.Eff.Exception (Error)
 import Control.Monad.Trans
 
 import Network.WebSockets.Sync.Socket as S
@@ -164,7 +165,7 @@ performAction :: forall uid userdata eff. (ToJSON userdata)
 performAction = handler
   where
     -- specialized sendSync
-    sendSync :: forall b. (FromJSON b) => S.Socket -> (R.Proxy b -> UserCommand userdata) -> Aff (Effects eff) b
+    sendSync :: forall b. (FromJSON b) => S.Socket -> (R.Proxy b -> UserCommand userdata) -> Aff (Effects eff) (Either Error b)
     sendSync = R.sendSync
 
     handler :: T.PerformAction (Effects eff) (State uid userdata) (Config userdata) (Action uid userdata)
@@ -175,8 +176,8 @@ performAction = handler
         props.sessionLength
 
       case sessionId of
-        Just sessionId -> lift (withSessionId false sessionId) >>= emit
-        Nothing -> emit $ set (loginState <<< loginError) true
+        Right (Just sessionId) -> lift (withSessionId false sessionId) >>= emit
+        Left _ -> emit $ set (loginState <<< loginError) true
     handler LoginWithFacebook props state = lift $ do
       window <- liftEff $ DOM.window
       location <- liftEff $ DOM.location window
@@ -188,14 +189,15 @@ performAction = handler
 
       facebookLoginUrl <- sendSync props.socket (RPC.AuthFacebookUrl (encodeURIComponent $ origin ++ pathname ++ "#" ++ props.redirectUrl) [])
 
-      liftEff $ DOM.replace facebookLoginUrl location
+      case facebookLoginUrl of
+        Right facebookLoginUrl -> liftEff $ DOM.replace facebookLoginUrl location
+        Left _ -> return unit
 
     handler Logout props state = do
       lift $ liftEff $ WebStorage.removeItem WebStorage.localStorage "session"
       case state.sessionId of
         Just sessionId -> do
-          RPC.Ok <- lift $ sendSync props.socket (RPC.Logout sessionId)
-          return unit
+          void $ lift $ sendSync props.socket (RPC.Logout sessionId)
         Nothing -> return unit
       emit \_ -> emptyState
 
@@ -236,7 +238,7 @@ getState props = do
   search <- liftEff $ DOM.search location
 
   let -- specialized sendSync
-      sendSync :: forall b. (FromJSON b) => S.Socket -> (R.Proxy b -> UserCommand userdata) -> Aff (Effects eff) b
+      sendSync :: forall b. (FromJSON b) => S.Socket -> (R.Proxy b -> UserCommand userdata) -> Aff (Effects eff) (Either Error b)
       sendSync = R.sendSync
 
   if hash == "#" ++ props.redirectUrl
@@ -245,7 +247,7 @@ getState props = do
 
       case token of
         Left _ -> return Nothing
-        Right sessionId -> do
+        Right (Right sessionId) -> do
           with <- withSessionId true sessionId
           return $ Just (with emptyState)
     else do
