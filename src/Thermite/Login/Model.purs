@@ -74,6 +74,7 @@ type LoginState =
   { loginName :: String
   , loginPassword :: String
   , loginError :: Boolean
+  , loginLoading :: Boolean
   }
 
 emptyLoginState :: LoginState
@@ -81,6 +82,7 @@ emptyLoginState =
   { loginName: ""
   , loginPassword: ""
   , loginError: false
+  , loginLoading: false
   }
 
 type ResetPasswordState =
@@ -94,8 +96,6 @@ emptyResetPasswordState =
 
 type State uid userdata =
   { sessionId :: Maybe RPC.SessionId
-  , userId :: Maybe uid
-  , sessionUser :: Maybe (RPC.User (RPC.UserAdditionalInfo userdata))
   , redirectingAfterLogin :: Boolean
   , screen :: Screen
   , regState :: RegisterState
@@ -106,8 +106,6 @@ type State uid userdata =
 emptyState :: forall uid userdata. State uid userdata
 emptyState =
   { sessionId: Nothing
-  , sessionUser: Nothing
-  , userId: Nothing
   , screen: LoginScreen
   , redirectingAfterLogin: false
   , regState: emptyRegisterState
@@ -129,7 +127,7 @@ localeDe =
   , register: "Registrieren"
   , loginWithFacebook: "Mit Facebook einloggen"
 
-  , errUserOrPasswordIncorrect: "Username oder Password falsch"
+  , errUserOrPasswordIncorrect: "Username oder Passwort falsch"
   , errUserOrEmailAlreadyTaken: "Username oder Email existieren schon"
   , errEmptyFullname: "Name darf nicht leer sein"
 

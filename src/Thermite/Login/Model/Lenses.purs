@@ -60,6 +60,48 @@ _ResetPasswordScreen = prism (const ResetPasswordScreen) unwrap
   unwrap ResetPasswordScreen = Right unit
   unwrap y = Left y
 
+name :: forall a b r. Lens { "name" :: a | r } { "name" :: b | r } a b
+name = lens _."name" (_ { "name" = _ })
+
+password :: forall a b r. Lens { "password" :: a | r } { "password" :: b | r } a b
+password = lens _."password" (_ { "password" = _ })
+
+repeatPassword :: forall a b r. Lens { "repeatPassword" :: a | r } { "repeatPassword" :: b | r } a b
+repeatPassword = lens _."repeatPassword" (_ { "repeatPassword" = _ })
+
+resetPassword :: forall a b r. Lens { "resetPassword" :: a | r } { "resetPassword" :: b | r } a b
+resetPassword = lens _."resetPassword" (_ { "resetPassword" = _ })
+
+login :: forall a b r. Lens { "login" :: a | r } { "login" :: b | r } a b
+login = lens _."login" (_ { "login" = _ })
+
+fullName :: forall a b r. Lens { "fullName" :: a | r } { "fullName" :: b | r } a b
+fullName = lens _."fullName" (_ { "fullName" = _ })
+
+email :: forall a b r. Lens { "email" :: a | r } { "email" :: b | r } a b
+email = lens _."email" (_ { "email" = _ })
+
+forgotPassword :: forall a b r. Lens { "forgotPassword" :: a | r } { "forgotPassword" :: b | r } a b
+forgotPassword = lens _."forgotPassword" (_ { "forgotPassword" = _ })
+
+register :: forall a b r. Lens { "register" :: a | r } { "register" :: b | r } a b
+register = lens _."register" (_ { "register" = _ })
+
+loginWithFacebook :: forall a b r. Lens { "loginWithFacebook" :: a | r } { "loginWithFacebook" :: b | r } a b
+loginWithFacebook = lens _."loginWithFacebook" (_ { "loginWithFacebook" = _ })
+
+errUserOrPasswordIncorrect :: forall a b r. Lens { "errUserOrPasswordIncorrect" :: a | r } { "errUserOrPasswordIncorrect" :: b | r } a b
+errUserOrPasswordIncorrect = lens _."errUserOrPasswordIncorrect" (_ { "errUserOrPasswordIncorrect" = _ })
+
+errUserOrEmailAlreadyTaken :: forall a b r. Lens { "errUserOrEmailAlreadyTaken" :: a | r } { "errUserOrEmailAlreadyTaken" :: b | r } a b
+errUserOrEmailAlreadyTaken = lens _."errUserOrEmailAlreadyTaken" (_ { "errUserOrEmailAlreadyTaken" = _ })
+
+errEmptyFullname :: forall a b r. Lens { "errEmptyFullname" :: a | r } { "errEmptyFullname" :: b | r } a b
+errEmptyFullname = lens _."errEmptyFullname" (_ { "errEmptyFullname" = _ })
+
+userCreatedSuccessfully :: forall a b r. Lens { "userCreatedSuccessfully" :: a | r } { "userCreatedSuccessfully" :: b | r } a b
+userCreatedSuccessfully = lens _."userCreatedSuccessfully" (_ { "userCreatedSuccessfully" = _ })
+
 redirectUrl :: forall a b r. Lens { "redirectUrl" :: a | r } { "redirectUrl" :: b | r } a b
 redirectUrl = lens _."redirectUrl" (_ { "redirectUrl" = _ })
 
@@ -71,6 +113,9 @@ sessionLength = lens _."sessionLength" (_ { "sessionLength" = _ })
 
 defaultUserData :: forall a b r. Lens { "defaultUserData" :: a | r } { "defaultUserData" :: b | r } a b
 defaultUserData = lens _."defaultUserData" (_ { "defaultUserData" = _ })
+
+locale :: forall a b r. Lens { "locale" :: a | r } { "locale" :: b | r } a b
+locale = lens _."locale" (_ { "locale" = _ })
 
 regName :: forall a b r. Lens { "regName" :: a | r } { "regName" :: b | r } a b
 regName = lens _."regName" (_ { "regName" = _ })
@@ -99,17 +144,14 @@ loginPassword = lens _."loginPassword" (_ { "loginPassword" = _ })
 loginError :: forall a b r. Lens { "loginError" :: a | r } { "loginError" :: b | r } a b
 loginError = lens _."loginError" (_ { "loginError" = _ })
 
+loginLoading :: forall a b r. Lens { "loginLoading" :: a | r } { "loginLoading" :: b | r } a b
+loginLoading = lens _."loginLoading" (_ { "loginLoading" = _ })
+
 resetEmail :: forall a b r. Lens { "resetEmail" :: a | r } { "resetEmail" :: b | r } a b
 resetEmail = lens _."resetEmail" (_ { "resetEmail" = _ })
 
 sessionId :: forall a b r. Lens { "sessionId" :: a | r } { "sessionId" :: b | r } a b
 sessionId = lens _."sessionId" (_ { "sessionId" = _ })
-
-userId :: forall a b r. Lens { "userId" :: a | r } { "userId" :: b | r } a b
-userId = lens _."userId" (_ { "userId" = _ })
-
-sessionUser :: forall a b r. Lens { "sessionUser" :: a | r } { "sessionUser" :: b | r } a b
-sessionUser = lens _."sessionUser" (_ { "sessionUser" = _ })
 
 redirectingAfterLogin :: forall a b r. Lens { "redirectingAfterLogin" :: a | r } { "redirectingAfterLogin" :: b | r } a b
 redirectingAfterLogin = lens _."redirectingAfterLogin" (_ { "redirectingAfterLogin" = _ })

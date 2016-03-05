@@ -18,7 +18,7 @@ import Global
 import Control.Alt
 import Control.Apply
 import Control.Bind
-import Control.Coroutine (emit)
+import Control.Monad
 import Control.Monad.Aff
 import Control.Monad.Eff
 import Control.Monad.Eff.Class
@@ -30,6 +30,7 @@ import Network.WebSockets.Sync.Request as R
 
 import Web.Users.Remote.Types.Shared as RPC
 
+import Thermite (modify)
 import Thermite as T
 
 import DOM as DOM
@@ -54,6 +55,21 @@ type UserCommand userdata = RPC.UserCommand userdata Int RPC.SessionId
 
 type Effects eff = (webStorage :: WebStorage.WebStorage, dom :: DOM.DOM, websocket :: S.WebSocket | eff)
 
+loadingButton :: forall uid userdata. Boolean -> String -> String -> (Action uid userdata -> T.EventHandler) -> Action uid userdata -> R.ReactElement
+loadingButton loading text className dispatch action =
+  R.div
+    (if loading
+      then [ RP.className className ]
+      else
+        [ RP.onClick \_ -> dispatch action
+        , RP.className className
+        ]
+    )
+    [ if loading
+        then R.div [ RP.className "login-button-loading icon ion-ios-loop-strong" ] []
+        else R.text text
+    ]
+
 render :: forall uid userdata. T.Render (State uid userdata) (Config userdata) (Action uid userdata)
 render dispatch props state _
   | state.redirectingAfterLogin = []
@@ -67,11 +83,12 @@ render dispatch props state _
       renderLoginScreen = concat
         [ textinput props.locale.name (loginState <<< loginName)
         , textinput' true props.locale.password (loginState <<< loginPassword)
-        , [ R.div
-            [ RP.onClick \_ -> dispatch Login
-            , RP.className "login-button-login"
-            ]
-            [ R.text props.locale.login ]
+        , [ loadingButton
+              state.loginState.loginLoading
+              props.locale.login
+              "login-button-login"
+              dispatch
+              Login
           , R.div
             [ RP.className "login-text-container" ]
             [ R.div
@@ -171,15 +188,17 @@ performAction = handler
     sendSync = R.sendSync
 
     handler :: T.PerformAction (Effects eff) (State uid userdata) (Config userdata) (Action uid userdata)
-    handler Login props state = do
+    handler Login props state = when (not $ state.loginState.loginLoading) $ do
+      modify $ set (loginState <<< loginLoading) true
       sessionId <- lift $ sendSync props.socket $ RPC.AuthUser
         state.loginState.loginName
         state.loginState.loginPassword
         props.sessionLength
 
       case sessionId of
-        Right (Just sessionId) -> lift (withSessionId false sessionId) >>= emit
-        Left _ -> emit $ set (loginState <<< loginError) true
+        Right (Just sessionId) -> lift (withSessionId false sessionId) >>= modify
+        Left _ -> modify $ set (loginState <<< loginLoading) false
+                       <<< set (loginState <<< loginError) true
     handler LoginWithFacebook props state = lift $ do
       window <- liftEff $ DOM.window
       location <- liftEff $ DOM.location window
@@ -201,7 +220,7 @@ performAction = handler
         Just sessionId -> do
           void $ lift $ sendSync props.socket (RPC.Logout sessionId)
         Nothing -> return unit
-      emit \_ -> emptyState
+      modify \_ -> emptyState
 
     handler Register props state = do
       r <- lift $ sendSync props.socket $ RPC.CreateUser (RPC.User
@@ -214,16 +233,16 @@ performAction = handler
           , userAIFullName: state.regState.regFullName
           }
         }) state.regState.regPassword
-      emit $ case r of
+      modify $ case r of
         Right (Left err) -> set (regState <<< regResult) (Just $ Left err)
         Right (Right _) -> set (regState <<< regResult) (Just $ Right unit)
         Left  _ -> set (regState <<< regResult) Nothing
     handler ResetPassword _ state = do
-      emit $ set screen LoginScreen
+      modify $ set screen LoginScreen
     handler (TextChanged lens v) _ state = do
-      emit $ set lens v
+      modify $ set lens v
     handler (ChangeScreen screen) _ state = do
-      emit $ \s -> s { screen = screen }
+      modify $ \s -> s { screen = screen }
 
 spec :: forall uid userdata eff. (ToJSON userdata) => T.Spec (Effects eff) (State uid userdata) (Config userdata) (Action uid userdata)
 spec = T.simpleSpec performAction render
