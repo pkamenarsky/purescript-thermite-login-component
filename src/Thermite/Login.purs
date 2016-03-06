@@ -55,6 +55,15 @@ type UserCommand userdata = RPC.UserCommand userdata Int RPC.SessionId
 
 type Effects eff = (webStorage :: WebStorage.WebStorage, dom :: DOM.DOM, websocket :: S.WebSocket | eff)
 
+validateAlways :: forall a b. State a b -> Boolean
+validateAlways _ = true
+
+validateFullName :: forall a b. State a b -> Boolean
+validateFullName st = not null st.regState.regFullName
+
+validateRepeatPassword :: forall a b. State a b -> Boolean
+validateRepeatPassword st = st.regState.regPassword == st.regState.regRepeatPassword
+
 loadingButton :: forall uid userdata. Boolean -> String -> String -> (Action uid userdata -> T.EventHandler) -> Action uid userdata -> R.ReactElement
 loadingButton loading text className dispatch action =
   R.div
@@ -81,8 +90,8 @@ render dispatch props state _
     where
       container es = [ R.div [ RP.className "login-container" ] es ]
       renderLoginScreen = concat
-        [ textinput props.locale.name (loginState <<< loginName)
-        , textinput' true props.locale.password (loginState <<< loginPassword)
+        [ textinput props.locale.name validateAlways (loginState <<< loginName)
+        , textinput' true props.locale.password validateAlways (loginState <<< loginPassword)
         , [ loadingButton
               state.loginState.loginLoading
               props.locale.login
@@ -118,11 +127,11 @@ render dispatch props state _
         ]
 
       renderRegisterScreen = concat
-        [ textinput props.locale.name (regState <<< regName)
-        , textinput props.locale.fullName (regState <<< regFullName)
-        , textinput props.locale.email (regState <<< regEmail)
-        , textinput' true props.locale.password (regState <<< regPassword)
-        , textinput' true props.locale.repeatPassword (regState <<< regRepeatPassword)
+        [ textinput props.locale.name validateAlways (regState <<< regName)
+        , textinput props.locale.fullName validateFullName (regState <<< regFullName)
+        , textinput props.locale.email validateAlways (regState <<< regEmail)
+        , textinput' true props.locale.password validateAlways (regState <<< regPassword)
+        , textinput' true props.locale.repeatPassword validateRepeatPassword (regState <<< regRepeatPassword)
         , [ R.div
             [ RP.onClick \_ -> dispatch Register
             , RP.className "login-button-register"
@@ -137,7 +146,7 @@ render dispatch props state _
         ]
 
       renderResetPasswordScreen = concat
-        [ textinput props.locale.email (resetPasswordState <<< resetEmail)
+        [ textinput props.locale.email validateAlways (resetPasswordState <<< resetEmail)
         , [ R.div
             [ RP.onClick \_ -> dispatch ResetPassword
             , RP.className "login-button-reset-password"
@@ -146,13 +155,19 @@ render dispatch props state _
           ]
         ]
 
-      textinput' :: Boolean -> String -> Lens (State uid userdata) (State uid userdata) String String -> _
-      textinput' pwd text lens =
+      textinput' :: Boolean
+                 -> String
+                 -> (State uid userdata -> Boolean)
+                 -> Lens (State uid userdata) (State uid userdata) String String
+                 -> _
+      textinput' pwd text validate lens =
         [ R.input
           [ RP.onChange \e -> dispatch $ TextChanged lens ((unsafeCoerce e).target.value)
           , RP.value (state ^. lens)
           , RP.placeholder text
-          , RP.className "login-input"
+          , if validate state
+               then RP.className "login-input"
+               else RP.className "login-input login-input-error"
           , if pwd then RP._type "password" else RP._type ""
           ] []
         ]
@@ -188,7 +203,7 @@ performAction = handler
     sendSync = R.sendSync
 
     handler :: T.PerformAction (Effects eff) (State uid userdata) (Config userdata) (Action uid userdata)
-    handler Login props state = when (not $ state.loginState.loginLoading) $ do
+    handler Login props state = do
       modify $ set (loginState <<< loginLoading) true
       sessionId <- lift $ sendSync props.socket $ RPC.AuthUser
         state.loginState.loginName

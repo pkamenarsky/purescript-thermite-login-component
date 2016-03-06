@@ -1,8 +1,15 @@
 module Thermite.Login.Model where
 
+import Control.Alt ((<|>))
+import Control.Apply ((<*))
+
+import Data.Functor ((<$))
 import Data.Lens
 import Data.Either
 import Data.Maybe
+
+import Routing.Match as Routing
+import Routing.Match.Class as Routing
 
 import DOM.HTML.Types as DOM
 
@@ -21,6 +28,17 @@ data Action uid userdata =
   | TextChanged (Lens (State uid userdata) (State uid userdata) String String) String
 
 data Screen = LoginScreen | RegisterScreen | ResetPasswordScreen
+
+toRoute :: Screen -> String
+toRoute LoginScreen = "login"
+toRoute RegisterScreen = "register"
+toRoute ResetPasswordScreen = "reset"
+
+fromRoute :: String -> Maybe Screen
+fromRoute "login" = Just LoginScreen
+fromRoute "register" = Just RegisterScreen
+fromRoute "ResetPasswordScreen" = Just ResetPasswordScreen
+fromRoute _= Nothing
 
 type Locale =
   { name :: String
@@ -133,3 +151,8 @@ localeDe =
 
   , userCreatedSuccessfully: "User erfolgreich registriert"
   }
+
+loginMatch :: Routing.Match Screen
+loginMatch = LoginScreen <$ Routing.lit "" <* Routing.lit "login"
+         <|> RegisterScreen <$ Routing.lit "" <* Routing.lit "register"
+         <|> ResetPasswordScreen <$ Routing.lit "" <* Routing.lit "reset"
