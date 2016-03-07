@@ -25,20 +25,10 @@ data Action uid userdata =
   | ResetPassword
 
   | ChangeScreen Screen
+  | ScreenChanged Screen
   | TextChanged (Lens (State uid userdata) (State uid userdata) String String) String
 
 data Screen = LoginScreen | RegisterScreen | ResetPasswordScreen
-
-toRoute :: Screen -> String
-toRoute LoginScreen = "login"
-toRoute RegisterScreen = "register"
-toRoute ResetPasswordScreen = "reset"
-
-fromRoute :: String -> Maybe Screen
-fromRoute "login" = Just LoginScreen
-fromRoute "register" = Just RegisterScreen
-fromRoute "ResetPasswordScreen" = Just ResetPasswordScreen
-fromRoute _= Nothing
 
 type Locale =
   { name :: String
@@ -152,7 +142,12 @@ localeDe =
   , userCreatedSuccessfully: "User erfolgreich registriert"
   }
 
+toRoute :: Screen -> String
+toRoute LoginScreen = ""
+toRoute RegisterScreen = "register"
+toRoute ResetPasswordScreen = "reset"
+
 loginMatch :: Routing.Match Screen
-loginMatch = LoginScreen <$ Routing.lit "" <* Routing.lit "login"
-         <|> RegisterScreen <$ Routing.lit "" <* Routing.lit "register"
-         <|> ResetPasswordScreen <$ Routing.lit "" <* Routing.lit "reset"
+loginMatch = LoginScreen <$ Routing.lit ""
+         <|> RegisterScreen <$ Routing.lit "register"
+         <|> ResetPasswordScreen <$ Routing.lit "reset"

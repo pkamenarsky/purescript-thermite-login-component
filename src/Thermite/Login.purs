@@ -101,12 +101,12 @@ render dispatch props state _
           , R.div
             [ RP.className "login-text-container" ]
             [ R.div
-              [ RP.onClick \_ -> dispatch (ChangeScreen ResetPasswordScreen)
+              [ RP.onClick \_ -> dispatch (ScreenChanged ResetPasswordScreen)
               , RP.className "login-text-forgot-password"
               ]
               [ R.text props.locale.forgotPassword ]
             , R.div
-              [ RP.onClick \_ -> dispatch (ChangeScreen RegisterScreen)
+              [ RP.onClick \_ -> dispatch (ScreenChanged RegisterScreen)
               , RP.className "login-text-register"
               ]
               [ R.text props.locale.register ]
@@ -257,6 +257,8 @@ performAction = handler
     handler (TextChanged lens v) _ state = do
       modify $ set lens v
     handler (ChangeScreen screen) _ state = do
+      modify $ \s -> s { screen = screen }
+    handler (ScreenChanged screen) _ state = do
       modify $ \s -> s { screen = screen }
 
 spec :: forall uid userdata eff. (ToJSON userdata) => T.Spec (Effects eff) (State uid userdata) (Config userdata) (Action uid userdata)
