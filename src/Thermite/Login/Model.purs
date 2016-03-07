@@ -63,6 +63,7 @@ type RegisterState =
   , regEmail :: String
   , regPassword :: String
   , regRepeatPassword :: String
+  , regLoading :: Boolean
 
   , regResult :: Maybe (Either RPC.CreateUserExtraError Unit)
   }
@@ -74,6 +75,7 @@ emptyRegisterState =
   , regEmail: ""
   , regPassword: ""
   , regRepeatPassword: ""
+  , regLoading: false
 
   , regResult: Nothing
   }

@@ -4,6 +4,7 @@ import Prelude
 
 import Data.Array (concat)
 import Data.Either
+import Data.Foldable (and)
 import Data.Functor
 import Data.JSON
 import Data.Lens
@@ -55,24 +56,34 @@ type UserCommand userdata = RPC.UserCommand userdata Int RPC.SessionId
 
 type Effects eff = (webStorage :: WebStorage.WebStorage, dom :: DOM.DOM, websocket :: S.WebSocket | eff)
 
-validateAlways :: forall a b. State a b -> Boolean
+type Validator a b = State a b -> Boolean
+
+allValid :: forall a b. State a b -> Array (Validator a b) -> Boolean
+allValid st = and <<< map ($ st)
+
+validateAlways :: forall a b. Validator a b
 validateAlways _ = true
 
-validateFullName :: forall a b. State a b -> Boolean
+validateFullName :: forall a b. Validator a b
 validateFullName st = not null st.regState.regFullName
 
-validateRepeatPassword :: forall a b. State a b -> Boolean
-validateRepeatPassword st = st.regState.regPassword == st.regState.regRepeatPassword
+validateEmail :: forall a b. Validator a b
+validateEmail st = not null st.regState.regEmail
 
-loadingButton :: forall uid userdata. Boolean -> String -> String -> (Action uid userdata -> T.EventHandler) -> Action uid userdata -> R.ReactElement
-loadingButton loading text className dispatch action =
+validateRepeatPassword :: forall a b. Validator a b
+validateRepeatPassword st = not null st.regState.regPassword
+                         && st.regState.regPassword == st.regState.regRepeatPassword
+
+button :: forall uid userdata. Boolean -> Boolean -> String -> String -> (Action uid userdata -> T.EventHandler) -> Action uid userdata -> R.ReactElement
+button valid loading text className dispatch action =
   R.div
-    (if loading
-      then [ RP.className className ]
-      else
+    (case Tuple valid loading of
+      Tuple true true -> [ RP.className className ]
+      Tuple true false ->
         [ RP.onClick \_ -> dispatch action
         , RP.className className
         ]
+      Tuple false _ -> [ RP.className $ className ++ " " ++ "login-button-disabled" ]
     )
     [ if loading
         then R.div [ RP.className "login-button-loading icon ion-ios-loop-strong" ] []
@@ -92,7 +103,8 @@ render dispatch props state _
       renderLoginScreen = concat
         [ textinput props.locale.name validateAlways (loginState <<< loginName)
         , textinput' true props.locale.password validateAlways (loginState <<< loginPassword)
-        , [ loadingButton
+        , [ button
+              true
               state.loginState.loginLoading
               props.locale.login
               "login-button-login"
@@ -128,15 +140,17 @@ render dispatch props state _
 
       renderRegisterScreen = concat
         [ textinput props.locale.name validateAlways (regState <<< regName)
-        , textinput props.locale.fullName validateFullName (regState <<< regFullName)
+        , textinput props.locale.fullName validateAlways (regState <<< regFullName)
         , textinput props.locale.email validateAlways (regState <<< regEmail)
         , textinput' true props.locale.password validateAlways (regState <<< regPassword)
         , textinput' true props.locale.repeatPassword validateRepeatPassword (regState <<< regRepeatPassword)
-        , [ R.div
-            [ RP.onClick \_ -> dispatch Register
-            , RP.className "login-button-register"
-            ]
-            [ R.text props.locale.register ]
+        , [ button
+              (allValid state [validateFullName, validateEmail, validateRepeatPassword])
+              state.regState.regLoading
+              props.locale.register
+              "login-button-register"
+              dispatch
+              Register
           ]
         , case state.regState.regResult of
             Just (Left RPC.UserFullNameEmptyError) -> [ R.div [ RP.className "login-register-error" ] [ R.text props.locale.errEmptyFullname ] ]
