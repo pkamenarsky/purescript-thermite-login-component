@@ -31,7 +31,7 @@ import Network.WebSockets.Sync.Request as R
 
 import Web.Users.Remote.Types.Shared as RPC
 
-import Thermite (modify)
+import Thermite (get, modify)
 import Thermite as T
 
 import DOM as DOM
@@ -101,8 +101,8 @@ render dispatch props state _
     where
       container es = [ R.div [ RP.className "login-container" ] es ]
       renderLoginScreen = concat
-        [ textinput props.locale.name validateAlways (loginState <<< loginName)
-        , textinput' true props.locale.password validateAlways (loginState <<< loginPassword)
+        [ textinput props.locale.name (loginState <<< loginName)
+        , textinput' true validateAlways (if state.loginState.loginLoading then Nothing else Just Login) props.locale.password (loginState <<< loginPassword)
         , [ button
               true
               state.loginState.loginLoading
@@ -139,11 +139,11 @@ render dispatch props state _
         ]
 
       renderRegisterScreen = concat
-        [ textinput props.locale.name validateAlways (regState <<< regName)
-        , textinput props.locale.fullName validateAlways (regState <<< regFullName)
-        , textinput props.locale.email validateAlways (regState <<< regEmail)
-        , textinput' true props.locale.password validateAlways (regState <<< regPassword)
-        , textinput' true props.locale.repeatPassword validateRepeatPassword (regState <<< regRepeatPassword)
+        [ textinput props.locale.name (regState <<< regName)
+        , textinput props.locale.fullName (regState <<< regFullName)
+        , textinput props.locale.email (regState <<< regEmail)
+        , textinput' true validateAlways Nothing props.locale.password (regState <<< regPassword)
+        , textinput' true validateRepeatPassword (Just Register) props.locale.repeatPassword (regState <<< regRepeatPassword)
         , [ button
               (allValid state [validateFullName, validateEmail, validateRepeatPassword])
               state.regState.regLoading
@@ -160,23 +160,29 @@ render dispatch props state _
         ]
 
       renderResetPasswordScreen = concat
-        [ textinput props.locale.email validateAlways (resetPasswordState <<< resetEmail)
-        , [ R.div
-            [ RP.onClick \_ -> dispatch ResetPassword
-            , RP.className "login-button-reset-password"
-            ]
-            [ R.text props.locale.resetPassword ]
+        [ textinput' false validateAlways (Just ResetPassword) props.locale.email (resetPasswordState <<< resetEmail)
+        , [ button
+              true
+              state.resetPasswordState.resetLoading
+              props.locale.resetPassword
+              "login-button-reset-password"
+              dispatch
+              ResetPassword
           ]
         ]
 
       textinput' :: Boolean
-                 -> String
                  -> (State uid userdata -> Boolean)
+                 -> Maybe (Action uid userdata)
+                 -> String
                  -> Lens (State uid userdata) (State uid userdata) String String
                  -> _
-      textinput' pwd text validate lens =
+      textinput' pwd validate onEnter text lens =
         [ R.input
           [ RP.onChange \e -> dispatch $ TextChanged lens ((unsafeCoerce e).target.value)
+          , RP.onKeyDown \e -> case onEnter of
+              Just action | e.keyCode == 13 -> dispatch action
+              _ -> return unit
           , RP.value (state ^. lens)
           , RP.placeholder text
           , if validate state
@@ -186,7 +192,7 @@ render dispatch props state _
           ] []
         ]
 
-      textinput = textinput' false
+      textinput = textinput' false validateAlways Nothing
 
 withSessionId :: forall uid userdata eff. Boolean -> RPC.SessionId -> Aff (dom :: DOM.DOM, webStorage :: WebStorage.WebStorage | eff) (State uid userdata -> State uid userdata)
 withSessionId redirect sessionId@(RPC.SessionId sid) = do
@@ -217,7 +223,7 @@ performAction = handler
     sendSync = R.sendSync
 
     handler :: T.PerformAction (Effects eff) (State uid userdata) (Config userdata) (Action uid userdata)
-    handler Login props state = do
+    handler Login props state = when (not $ state.loginState.loginLoading) $ do
       modify $ set (loginState <<< loginLoading) true
       sessionId <- lift $ sendSync props.socket $ RPC.AuthUser
         state.loginState.loginName
@@ -228,6 +234,7 @@ performAction = handler
         Right (Just sessionId) -> lift (withSessionId false sessionId) >>= modify
         Left _ -> modify $ set (loginState <<< loginLoading) false
                        <<< set (loginState <<< loginError) true
+
     handler LoginWithFacebook props state = lift $ do
       window <- liftEff $ DOM.window
       location <- liftEff $ DOM.location window
@@ -251,7 +258,7 @@ performAction = handler
         Nothing -> return unit
       modify \_ -> emptyState
 
-    handler Register props state = do
+    handler Register props state = when (not $ state.regState.regLoading) $ do
       r <- lift $ sendSync props.socket $ RPC.CreateUser (RPC.User
         { u_name: state.regState.regName
         , u_email: state.regState.regEmail
@@ -266,7 +273,7 @@ performAction = handler
         Right (Left err) -> set (regState <<< regResult) (Just $ Left err)
         Right (Right _) -> set (regState <<< regResult) (Just $ Right unit)
         Left  _ -> set (regState <<< regResult) Nothing
-    handler ResetPassword _ state = do
+    handler ResetPassword _ state = when (not $ state.resetPasswordState.resetLoading) $ do
       modify $ set screen LoginScreen
     handler (TextChanged lens v) _ state = do
       modify $ set lens v

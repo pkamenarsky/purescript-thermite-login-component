@@ -97,11 +97,13 @@ emptyLoginState =
 
 type ResetPasswordState =
   { resetEmail :: String
+  , resetLoading :: Boolean
   }
 
 emptyResetPasswordState :: ResetPasswordState
 emptyResetPasswordState =
   { resetEmail: ""
+  , resetLoading: false
   }
 
 type State uid userdata =
