@@ -1,4 +1,4 @@
-module Thermite.Login (spec, getState, module Web.Users.Remote.Types.Shared) where
+module Thermite.Login (spec, getState, deleteSession, module Web.Users.Remote.Types.Shared) where
 
 import Prelude
 
@@ -284,6 +284,9 @@ parseParams str = case stripPrefix "?" str of
   Nothing -> []
     where toTuple [a, b] = Tuple a b
           toTuple _ = Tuple "" ""
+
+deleteSession :: forall eff. Eff (Effects eff) Unit
+deleteSession = WebStorage.removeItem WebStorage.localStorage "href-before-login"
 
 getState :: forall uid userdata eff. (ToJSON userdata) => Config userdata -> Aff (Effects eff) (Maybe (State uid userdata))
 getState props = do
