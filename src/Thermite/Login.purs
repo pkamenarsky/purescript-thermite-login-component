@@ -293,7 +293,7 @@ parseParams str = case stripPrefix "?" str of
           toTuple _ = Tuple "" ""
 
 deleteSession :: forall eff. Eff (Effects eff) Unit
-deleteSession = WebStorage.removeItem WebStorage.localStorage "href-before-login"
+deleteSession = WebStorage.removeItem WebStorage.localStorage "session"
 
 getState :: forall uid userdata eff. (ToJSON userdata) => Config userdata -> Aff (Effects eff) (Maybe (State uid userdata))
 getState props = do
