@@ -139,8 +139,8 @@ localeDe =
   , register: "Registrieren"
   , loginWithFacebook: "Mit Facebook einloggen"
 
-  , errUserOrPasswordIncorrect: "Username oder Passwort falsch"
-  , errUserOrEmailAlreadyTaken: "Username oder Email existieren schon"
+  , errUserOrPasswordIncorrect: "Username/Passwort falsch"
+  , errUserOrEmailAlreadyTaken: "Username/Email existieren schon"
   , errEmptyFullname: "Name darf nicht leer sein"
 
   , userCreatedSuccessfully: "User erfolgreich registriert"

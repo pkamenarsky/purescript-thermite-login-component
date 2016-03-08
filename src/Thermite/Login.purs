@@ -269,10 +269,13 @@ performAction = handler
           , userAIFullName: state.regState.regFullName
           }
         }) state.regState.regPassword
-      modify $ case r of
-        Right (Left err) -> set (regState <<< regResult) (Just $ Left err)
-        Right (Right _) -> set (regState <<< regResult) (Just $ Right unit)
-        Left  _ -> set (regState <<< regResult) Nothing
+      case r of
+        Right (Left err) -> modify $ set (regState <<< regResult) (Just $ Left err)
+        Right (Right _) -> do
+          modify $ set (regState <<< regResult) (Just $ Right unit)
+          -- lift $ later' 1500 $ return unit -- delay for a bit before going back to login screen
+          -- modify $ set screen LoginScreen
+        Left  _ -> modify $ set (regState <<< regResult) Nothing
     handler ResetPassword _ state = when (not $ state.resetPasswordState.resetLoading) $ do
       modify $ set screen LoginScreen
     handler (TextChanged lens v) _ state = do
