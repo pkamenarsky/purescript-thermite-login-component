@@ -233,7 +233,7 @@ performAction = handler
       case sessionId of
         Right (Just sessionId) -> lift (withSessionId false sessionId) >>= modify
         _ -> modify $ set (loginState <<< loginLoading) false
-                       <<< set (loginState <<< loginError) true
+                  <<< set (loginState <<< loginError) true
 
     handler LoginWithFacebook props state = lift $ do
       window <- liftEff $ DOM.window
