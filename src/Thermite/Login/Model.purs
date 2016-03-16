@@ -17,7 +17,7 @@ import Prelude
 import Network.WebSockets.Sync.Socket as S
 import Web.Users.Remote.Types.Shared as RPC
 
-data Action uid userdata =
+data Action uid userdata err =
     Login
   | LoginWithFacebook
   | Logout
@@ -26,11 +26,11 @@ data Action uid userdata =
 
   | ChangeScreen Screen
   | ScreenChanged Screen
-  | TextChanged (Lens (State uid userdata) (State uid userdata) String String) String
+  | TextChanged (Lens (State uid userdata err) (State uid userdata err) String String) String
 
 data Screen = LoginScreen | RegisterScreen | ResetPasswordScreen
 
-type Locale =
+type Locale err =
   { name :: String
   , password :: String
   , repeatPassword :: String
@@ -44,20 +44,21 @@ type Locale =
 
   , errUserOrPasswordIncorrect :: String
   , errUserOrEmailAlreadyTaken :: String
-  , errEmptyFullname :: String
 
   , userCreatedSuccessfully :: String
+
+  , userDataValidationError :: err -> String
   }
 
-type Config userdata =
+type Config userdata err =
   { redirectUrl :: String
   , socket :: S.Socket
   , sessionLength :: Int
   , defaultUserData :: userdata
-  , locale :: Locale
+  , locale :: Locale err
   }
 
-type RegisterState =
+type RegisterState err =
   { regName :: String
   , regFullName :: String
   , regEmail :: String
@@ -65,10 +66,10 @@ type RegisterState =
   , regRepeatPassword :: String
   , regLoading :: Boolean
 
-  , regResult :: Maybe (Either RPC.CreateUserExtraError Unit)
+  , regResult :: Maybe (Either (RPC.CreateUserValidationError err) Unit)
   }
 
-emptyRegisterState :: RegisterState
+emptyRegisterState :: forall err. RegisterState err
 emptyRegisterState =
   { regName: ""
   , regFullName: ""
@@ -106,16 +107,16 @@ emptyResetPasswordState =
   , resetLoading: false
   }
 
-type State uid userdata =
+type State uid userdata err =
   { sessionId :: Maybe RPC.SessionId
   , redirectingAfterLogin :: Boolean
   , screen :: Screen
-  , regState :: RegisterState
+  , regState :: RegisterState err
   , loginState :: LoginState
   , resetPasswordState :: ResetPasswordState
   }
 
-emptyState :: forall uid userdata. State uid userdata
+emptyState :: forall uid userdata err. State uid userdata err
 emptyState =
   { sessionId: Nothing
   , screen: LoginScreen
@@ -127,7 +128,7 @@ emptyState =
 
 -- Locales
 
-localeDe =
+localeDe userDataValidationError =
   { name: "Username"
   , password: "Passwort"
   , repeatPassword: "Passwort wiederholen"
@@ -141,9 +142,9 @@ localeDe =
 
   , errUserOrPasswordIncorrect: "Username/Passwort falsch"
   , errUserOrEmailAlreadyTaken: "Username/Email existieren schon"
-  , errEmptyFullname: "Name darf nicht leer sein"
 
   , userCreatedSuccessfully: "User erfolgreich registriert"
+  , userDataValidationError
   }
 
 toRoute :: Screen -> String

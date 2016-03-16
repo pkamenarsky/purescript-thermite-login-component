@@ -153,7 +153,7 @@ render dispatch props state _
               Register
           ]
         , case state.regState.regResult of
-            Just (Left RPC.UserFullNameEmptyError) -> [ R.div [ RP.className "login-register-error" ] [ R.text props.locale.errEmptyFullname ] ]
+            Just (Left (RPC.CreateUserValidationError err)) -> [ R.div [ RP.className "login-register-error" ] [ R.text props.locale.userDataValidationError err ] ]
             Just (Left _) -> [ R.div [ RP.className "login-register-error" ] [ R.text props.locale.errUserOrEmailAlreadyTaken ] ]
             Just (Right _) ->  [ R.div [ RP.className "login-register-success" ] [ R.text props.locale.userCreatedSuccessfully ] ]
             _ ->  []
@@ -214,15 +214,15 @@ withSessionId redirect sessionId@(RPC.SessionId sid) = do
       then return \st -> st { redirectingAfterLogin = true }
       else return \st -> st { sessionId = Just sessionId }
 
-performAction :: forall uid userdata eff. (ToJSON userdata)
-              => T.PerformAction (Effects eff) (State uid userdata) (Config userdata) (Action uid userdata)
+performAction :: forall uid userdata err eff. (ToJSON userdata)
+              => T.PerformAction (Effects eff) (State uid userdata) (Config userdata err) (Action uid userdata)
 performAction = handler
   where
     -- specialized sendSync
-    sendSync :: forall b. (FromJSON b) => S.Socket -> (R.Proxy b -> UserCommand userdata) -> Aff (Effects eff) (Either Error b)
+    sendSync :: forall b. (FromJSON b) => S.Socket -> (R.Proxy b -> UserCommand userdata err) -> Aff (Effects eff) (Either Error b)
     sendSync = R.sendSync
 
-    handler :: T.PerformAction (Effects eff) (State uid userdata) (Config userdata) (Action uid userdata)
+    handler :: T.PerformAction (Effects eff) (State uid userdata) (Config userdata err) (Action uid userdata)
     handler Login props state = when (not $ state.loginState.loginLoading) $ do
       modify $ set (loginState <<< loginLoading) true
       sessionId <- lift $ sendSync props.socket $ RPC.AuthUser
@@ -259,16 +259,10 @@ performAction = handler
       modify \_ -> emptyState
 
     handler Register props state = when (not $ state.regState.regLoading) $ do
-      r <- lift $ sendSync props.socket $ RPC.CreateUser (RPC.User
-        { u_name: state.regState.regName
-        , u_email: state.regState.regEmail
-        , u_password: RPC.PasswordHidden
-        , u_active: true
-        , u_more: RPC.UserAdditionalInfo
-          { userInfo: props.defaultUserData
-          , userAIFullName: state.regState.regFullName
-          }
-        }) state.regState.regPassword
+      r <- lift $ sendSync props.socket $ RPC.CreateUser
+             state.regState.regName
+             state.regState.regEmail
+             state.regState.regPassword
       case r of
         Right (Left err) -> modify $ set (regState <<< regResult) (Just $ Left err)
         Right (Right _) -> do
