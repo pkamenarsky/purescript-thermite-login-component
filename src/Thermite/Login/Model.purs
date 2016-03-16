@@ -36,7 +36,6 @@ type Locale err field =
   , repeatPassword :: String
   , resetPassword :: String
   , login :: String
-  , fullName :: String
   , email :: String
   , forgotPassword :: String
   , register :: String
@@ -69,25 +68,25 @@ type Config uid userdata err field =
   , additionalFields :: Array (Field uid userdata err field)
   }
 
-type RegisterState err =
+type RegisterState userdata err =
   { regName :: String
-  , regFullName :: String
   , regEmail :: String
   , regPassword :: String
   , regRepeatPassword :: String
   , regLoading :: Boolean
+  , regUserData :: userdata
 
   , regResult :: Maybe (Either (RPC.CreateUserValidationError err) Unit)
   }
 
-emptyRegisterState :: forall err. RegisterState err
-emptyRegisterState =
+emptyRegisterState :: forall userdata err. userdata -> RegisterState userdata err
+emptyRegisterState regUserData =
   { regName: ""
-  , regFullName: ""
   , regEmail: ""
   , regPassword: ""
   , regRepeatPassword: ""
   , regLoading: false
+  , regUserData
 
   , regResult: Nothing
   }
@@ -122,17 +121,17 @@ type State uid userdata err =
   { sessionId :: Maybe RPC.SessionId
   , redirectingAfterLogin :: Boolean
   , screen :: Screen
-  , regState :: RegisterState err
+  , regState :: RegisterState userdata err
   , loginState :: LoginState
   , resetPasswordState :: ResetPasswordState
   }
 
-emptyState :: forall uid userdata err. State uid userdata err
-emptyState =
+emptyState :: forall uid userdata err field. Config uid userdata err field -> State uid userdata err
+emptyState cfg =
   { sessionId: Nothing
   , screen: LoginScreen
   , redirectingAfterLogin: false
-  , regState: emptyRegisterState
+  , regState: emptyRegisterState cfg.defaultUserData
   , loginState: emptyLoginState
   , resetPasswordState: emptyResetPasswordState
   }
@@ -145,7 +144,6 @@ localeDe userDataValidationError =
   , repeatPassword: "Passwort wiederholen"
   , resetPassword: "Neusetzen"
   , login: "Einloggen"
-  , fullName: "Name"
   , email: "Email"
   , forgotPassword: "Passwort vergessen"
   , register: "Registrieren"

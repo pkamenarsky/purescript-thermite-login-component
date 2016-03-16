@@ -62,9 +62,6 @@ allValid st = and <<< map ($ st)
 validateAlways :: forall a b err. Validator a b err
 validateAlways _ = true
 
-validateFullName :: forall a b err. Validator a b err
-validateFullName st = not null st.regState.regFullName
-
 validateEmail :: forall a b err. Validator a b err
 validateEmail st = not null st.regState.regEmail
 
@@ -138,12 +135,11 @@ render dispatch props state _
 
       renderRegisterScreen = concat
         [ textinput props.locale.name (regState <<< regName)
-        , textinput props.locale.fullName (regState <<< regFullName)
         , textinput props.locale.email (regState <<< regEmail)
         , textinput' true validateAlways Nothing props.locale.password (regState <<< regPassword)
         , textinput' true validateRepeatPassword (Just Register) props.locale.repeatPassword (regState <<< regRepeatPassword)
         , [ button
-              (allValid state [validateFullName, validateEmail, validateRepeatPassword])
+              (allValid state [validateEmail, validateRepeatPassword])
               state.regState.regLoading
               props.locale.register
               "login-button-register"
@@ -254,7 +250,7 @@ performAction = handler
         Just sessionId -> do
           void $ lift $ sendSync props.socket (RPC.Logout sessionId)
         Nothing -> return unit
-      modify \_ -> emptyState
+      modify \_ -> emptyState props
 
     handler Register props state = when (not $ state.regState.regLoading) $ do
       r <- lift $ sendSync props.socket $ RPC.CreateUser
@@ -313,9 +309,9 @@ getState props = do
         Right (Left _) -> return Nothing
         Right (Right sessionId) -> do
           with <- withSessionId true sessionId
-          return $ Just (with emptyState)
+          return $ Just (with $ emptyState props)
     else do
       session <- liftEff $ WebStorage.getItem WebStorage.localStorage "session"
       case session of
-        Just session -> return $ Just $ emptyState { sessionId = Just $ RPC.SessionId { unSessionId: session } }
+        Just session -> return $ Just $ (emptyState props) { sessionId = Just $ RPC.SessionId { unSessionId: session } }
         Nothing -> return Nothing
