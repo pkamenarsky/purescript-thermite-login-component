@@ -232,7 +232,7 @@ performAction = handler
 
       case sessionId of
         Right (Just sessionId) -> lift (withSessionId false sessionId) >>= modify
-        Left _ -> modify $ set (loginState <<< loginLoading) false
+        _ -> modify $ set (loginState <<< loginLoading) false
                        <<< set (loginState <<< loginError) true
 
     handler LoginWithFacebook props state = lift $ do
@@ -311,6 +311,7 @@ getState props = do
 
       case token of
         Left _ -> return Nothing
+        Right (Left _) -> return Nothing
         Right (Right sessionId) -> do
           with <- withSessionId true sessionId
           return $ Just (with emptyState)
