@@ -81,9 +81,6 @@ resetPassword = lens _."resetPassword" (_ { "resetPassword" = _ })
 login :: forall a b r. Lens { "login" :: a | r } { "login" :: b | r } a b
 login = lens _."login" (_ { "login" = _ })
 
-fullName :: forall a b r. Lens { "fullName" :: a | r } { "fullName" :: b | r } a b
-fullName = lens _."fullName" (_ { "fullName" = _ })
-
 email :: forall a b r. Lens { "email" :: a | r } { "email" :: b | r } a b
 email = lens _."email" (_ { "email" = _ })
 
@@ -108,6 +105,18 @@ userCreatedSuccessfully = lens _."userCreatedSuccessfully" (_ { "userCreatedSucc
 userDataValidationError :: forall a b r. Lens { "userDataValidationError" :: a | r } { "userDataValidationError" :: b | r } a b
 userDataValidationError = lens _."userDataValidationError" (_ { "userDataValidationError" = _ })
 
+additionalFieldTitle :: forall a b r. Lens { "additionalFieldTitle" :: a | r } { "additionalFieldTitle" :: b | r } a b
+additionalFieldTitle = lens _."additionalFieldTitle" (_ { "additionalFieldTitle" = _ })
+
+field :: forall a b r. Lens { "field" :: a | r } { "field" :: b | r } a b
+field = lens _."field" (_ { "field" = _ })
+
+setField :: forall a b r. Lens { "setField" :: a | r } { "setField" :: b | r } a b
+setField = lens _."setField" (_ { "setField" = _ })
+
+validate :: forall a b r. Lens { "validate" :: a | r } { "validate" :: b | r } a b
+validate = lens _."validate" (_ { "validate" = _ })
+
 redirectUrl :: forall a b r. Lens { "redirectUrl" :: a | r } { "redirectUrl" :: b | r } a b
 redirectUrl = lens _."redirectUrl" (_ { "redirectUrl" = _ })
 
@@ -123,11 +132,11 @@ defaultUserData = lens _."defaultUserData" (_ { "defaultUserData" = _ })
 locale :: forall a b r. Lens { "locale" :: a | r } { "locale" :: b | r } a b
 locale = lens _."locale" (_ { "locale" = _ })
 
+additionalFields :: forall a b r. Lens { "additionalFields" :: a | r } { "additionalFields" :: b | r } a b
+additionalFields = lens _."additionalFields" (_ { "additionalFields" = _ })
+
 regName :: forall a b r. Lens { "regName" :: a | r } { "regName" :: b | r } a b
 regName = lens _."regName" (_ { "regName" = _ })
-
-regFullName :: forall a b r. Lens { "regFullName" :: a | r } { "regFullName" :: b | r } a b
-regFullName = lens _."regFullName" (_ { "regFullName" = _ })
 
 regEmail :: forall a b r. Lens { "regEmail" :: a | r } { "regEmail" :: b | r } a b
 regEmail = lens _."regEmail" (_ { "regEmail" = _ })
@@ -140,6 +149,9 @@ regRepeatPassword = lens _."regRepeatPassword" (_ { "regRepeatPassword" = _ })
 
 regLoading :: forall a b r. Lens { "regLoading" :: a | r } { "regLoading" :: b | r } a b
 regLoading = lens _."regLoading" (_ { "regLoading" = _ })
+
+regUserData :: forall a b r. Lens { "regUserData" :: a | r } { "regUserData" :: b | r } a b
+regUserData = lens _."regUserData" (_ { "regUserData" = _ })
 
 regResult :: forall a b r. Lens { "regResult" :: a | r } { "regResult" :: b | r } a b
 regResult = lens _."regResult" (_ { "regResult" = _ })

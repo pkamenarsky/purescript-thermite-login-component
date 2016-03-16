@@ -55,7 +55,7 @@ type Validator a b err = State a b err -> Boolean
 
 type Field uid userdata err field =
   { field :: field
-  , set :: String -> userdata -> userdata
+  , fieldLens :: Lens userdata userdata String String
   , validate :: Validator uid userdata err
   }
 

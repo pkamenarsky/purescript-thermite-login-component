@@ -136,6 +136,9 @@ render dispatch props state _
       renderRegisterScreen = concat
         [ textinput props.locale.name (regState <<< regName)
         , textinput props.locale.email (regState <<< regEmail)
+        , concat $ flip map props.additionalFields \af ->
+            textinput (props.locale.additionalFieldTitle af.field)
+                      (regState <<< regUserData <<< af.fieldLens)
         , textinput' true validateAlways Nothing props.locale.password (regState <<< regPassword)
         , textinput' true validateRepeatPassword (Just Register) props.locale.repeatPassword (regState <<< regRepeatPassword)
         , [ button
