@@ -126,12 +126,12 @@ type State uid userdata err =
   , resetPasswordState :: ResetPasswordState
   }
 
-emptyState :: forall uid userdata err field. Config uid userdata err field -> State uid userdata err
-emptyState cfg =
+emptyState :: forall uid userdata err. userdata -> State uid userdata err
+emptyState userdata =
   { sessionId: Nothing
   , screen: LoginScreen
   , redirectingAfterLogin: false
-  , regState: emptyRegisterState cfg.defaultUserData
+  , regState: emptyRegisterState userdata
   , loginState: emptyLoginState
   , resetPasswordState: emptyResetPasswordState
   }

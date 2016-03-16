@@ -253,7 +253,7 @@ performAction = handler
         Just sessionId -> do
           void $ lift $ sendSync props.socket (RPC.Logout sessionId)
         Nothing -> return unit
-      modify \_ -> emptyState props
+      modify \_ -> emptyState props.defaultUserData
 
     handler Register props state = when (not $ state.regState.regLoading) $ do
       r <- lift $ sendSync props.socket $ RPC.CreateUser
@@ -312,9 +312,9 @@ getState props = do
         Right (Left _) -> return Nothing
         Right (Right sessionId) -> do
           with <- withSessionId true sessionId
-          return $ Just (with $ emptyState props)
+          return $ Just (with $ emptyState props.defaultUserData)
     else do
       session <- liftEff $ WebStorage.getItem WebStorage.localStorage "session"
       case session of
-        Just session -> return $ Just $ (emptyState props) { sessionId = Just $ RPC.SessionId { unSessionId: session } }
+        Just session -> return $ Just $ (emptyState props.defaultUserData) { sessionId = Just $ RPC.SessionId { unSessionId: session } }
         Nothing -> return Nothing
