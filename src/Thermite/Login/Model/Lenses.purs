@@ -6,40 +6,46 @@ import Data.Either (Either(..))
 import Thermite.Login.Model
 
 
-_Login :: forall userdata uid. PrismP (Action uid userdata) Unit
+_Login :: forall err userdata uid. PrismP (Action uid userdata err) Unit
 _Login = prism (const Login) unwrap
   where
   unwrap Login = Right unit
   unwrap y = Left y
 
-_LoginWithFacebook :: forall userdata uid. PrismP (Action uid userdata) Unit
+_LoginWithFacebook :: forall err userdata uid. PrismP (Action uid userdata err) Unit
 _LoginWithFacebook = prism (const LoginWithFacebook) unwrap
   where
   unwrap LoginWithFacebook = Right unit
   unwrap y = Left y
 
-_Logout :: forall userdata uid. PrismP (Action uid userdata) Unit
+_Logout :: forall err userdata uid. PrismP (Action uid userdata err) Unit
 _Logout = prism (const Logout) unwrap
   where
   unwrap Logout = Right unit
   unwrap y = Left y
 
-_Register :: forall userdata uid. PrismP (Action uid userdata) Unit
+_Register :: forall err userdata uid. PrismP (Action uid userdata err) Unit
 _Register = prism (const Register) unwrap
   where
   unwrap Register = Right unit
   unwrap y = Left y
 
-_ResetPassword :: forall userdata uid. PrismP (Action uid userdata) Unit
+_ResetPassword :: forall err userdata uid. PrismP (Action uid userdata err) Unit
 _ResetPassword = prism (const ResetPassword) unwrap
   where
   unwrap ResetPassword = Right unit
   unwrap y = Left y
 
-_ChangeScreen :: forall userdata uid. PrismP (Action uid userdata) Screen
+_ChangeScreen :: forall err userdata uid. PrismP (Action uid userdata err) Screen
 _ChangeScreen = prism ChangeScreen unwrap
   where
   unwrap (ChangeScreen x) = Right x
+  unwrap y = Left y
+
+_ScreenChanged :: forall err userdata uid. PrismP (Action uid userdata err) Screen
+_ScreenChanged = prism ScreenChanged unwrap
+  where
+  unwrap (ScreenChanged x) = Right x
   unwrap y = Left y
 
 _LoginScreen :: PrismP Screen Unit
@@ -96,11 +102,11 @@ errUserOrPasswordIncorrect = lens _."errUserOrPasswordIncorrect" (_ { "errUserOr
 errUserOrEmailAlreadyTaken :: forall a b r. Lens { "errUserOrEmailAlreadyTaken" :: a | r } { "errUserOrEmailAlreadyTaken" :: b | r } a b
 errUserOrEmailAlreadyTaken = lens _."errUserOrEmailAlreadyTaken" (_ { "errUserOrEmailAlreadyTaken" = _ })
 
-errEmptyFullname :: forall a b r. Lens { "errEmptyFullname" :: a | r } { "errEmptyFullname" :: b | r } a b
-errEmptyFullname = lens _."errEmptyFullname" (_ { "errEmptyFullname" = _ })
-
 userCreatedSuccessfully :: forall a b r. Lens { "userCreatedSuccessfully" :: a | r } { "userCreatedSuccessfully" :: b | r } a b
 userCreatedSuccessfully = lens _."userCreatedSuccessfully" (_ { "userCreatedSuccessfully" = _ })
+
+userDataValidationError :: forall a b r. Lens { "userDataValidationError" :: a | r } { "userDataValidationError" :: b | r } a b
+userDataValidationError = lens _."userDataValidationError" (_ { "userDataValidationError" = _ })
 
 redirectUrl :: forall a b r. Lens { "redirectUrl" :: a | r } { "redirectUrl" :: b | r } a b
 redirectUrl = lens _."redirectUrl" (_ { "redirectUrl" = _ })
@@ -132,6 +138,9 @@ regPassword = lens _."regPassword" (_ { "regPassword" = _ })
 regRepeatPassword :: forall a b r. Lens { "regRepeatPassword" :: a | r } { "regRepeatPassword" :: b | r } a b
 regRepeatPassword = lens _."regRepeatPassword" (_ { "regRepeatPassword" = _ })
 
+regLoading :: forall a b r. Lens { "regLoading" :: a | r } { "regLoading" :: b | r } a b
+regLoading = lens _."regLoading" (_ { "regLoading" = _ })
+
 regResult :: forall a b r. Lens { "regResult" :: a | r } { "regResult" :: b | r } a b
 regResult = lens _."regResult" (_ { "regResult" = _ })
 
@@ -149,6 +158,9 @@ loginLoading = lens _."loginLoading" (_ { "loginLoading" = _ })
 
 resetEmail :: forall a b r. Lens { "resetEmail" :: a | r } { "resetEmail" :: b | r } a b
 resetEmail = lens _."resetEmail" (_ { "resetEmail" = _ })
+
+resetLoading :: forall a b r. Lens { "resetLoading" :: a | r } { "resetLoading" :: b | r } a b
+resetLoading = lens _."resetLoading" (_ { "resetLoading" = _ })
 
 sessionId :: forall a b r. Lens { "sessionId" :: a | r } { "sessionId" :: b | r } a b
 sessionId = lens _."sessionId" (_ { "sessionId" = _ })

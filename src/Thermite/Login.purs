@@ -56,25 +56,25 @@ type UserCommand userdata = RPC.UserCommand userdata Int RPC.SessionId
 
 type Effects eff = (webStorage :: WebStorage.WebStorage, dom :: DOM.DOM, websocket :: S.WebSocket | eff)
 
-type Validator a b = State a b -> Boolean
+type Validator a b err = State a b err -> Boolean
 
-allValid :: forall a b. State a b -> Array (Validator a b) -> Boolean
+allValid :: forall a b err. State a b err -> Array (Validator a b err) -> Boolean
 allValid st = and <<< map ($ st)
 
-validateAlways :: forall a b. Validator a b
+validateAlways :: forall a b err. Validator a b err
 validateAlways _ = true
 
-validateFullName :: forall a b. Validator a b
+validateFullName :: forall a b err. Validator a b err
 validateFullName st = not null st.regState.regFullName
 
-validateEmail :: forall a b. Validator a b
+validateEmail :: forall a b err. Validator a b err
 validateEmail st = not null st.regState.regEmail
 
-validateRepeatPassword :: forall a b. Validator a b
+validateRepeatPassword :: forall a b err. Validator a b err
 validateRepeatPassword st = not null st.regState.regPassword
                          && st.regState.regPassword == st.regState.regRepeatPassword
 
-button :: forall uid userdata. Boolean -> Boolean -> String -> String -> (Action uid userdata -> T.EventHandler) -> Action uid userdata -> R.ReactElement
+button :: forall uid userdata err. Boolean -> Boolean -> String -> String -> (Action uid userdata err -> T.EventHandler) -> Action uid userdata err -> R.ReactElement
 button valid loading text className dispatch action =
   R.div
     (case Tuple valid loading of
@@ -90,7 +90,7 @@ button valid loading text className dispatch action =
         else R.text text
     ]
 
-render :: forall uid userdata. T.Render (State uid userdata) (Config userdata) (Action uid userdata)
+render :: forall uid userdata err. T.Render (State uid userdata err) (Config userdata err) (Action uid userdata err)
 render dispatch props state _
   | state.redirectingAfterLogin = []
   | otherwise = case state.screen of
@@ -153,7 +153,7 @@ render dispatch props state _
               Register
           ]
         , case state.regState.regResult of
-            Just (Left (RPC.CreateUserValidationError err)) -> [ R.div [ RP.className "login-register-error" ] [ R.text props.locale.userDataValidationError err ] ]
+            Just (Left (RPC.CreateUserValidationError err)) -> [ R.div [ RP.className "login-register-error" ] [ R.text $ props.locale.userDataValidationError err ] ]
             Just (Left _) -> [ R.div [ RP.className "login-register-error" ] [ R.text props.locale.errUserOrEmailAlreadyTaken ] ]
             Just (Right _) ->  [ R.div [ RP.className "login-register-success" ] [ R.text props.locale.userCreatedSuccessfully ] ]
             _ ->  []
@@ -172,10 +172,10 @@ render dispatch props state _
         ]
 
       textinput' :: Boolean
-                 -> (State uid userdata -> Boolean)
-                 -> Maybe (Action uid userdata)
+                 -> (State uid userdata err -> Boolean)
+                 -> Maybe (Action uid userdata err)
                  -> String
-                 -> Lens (State uid userdata) (State uid userdata) String String
+                 -> Lens (State uid userdata err) (State uid userdata err) String String
                  -> _
       textinput' pwd validate onEnter text lens =
         [ R.input
@@ -194,7 +194,7 @@ render dispatch props state _
 
       textinput = textinput' false validateAlways Nothing
 
-withSessionId :: forall uid userdata eff. Boolean -> RPC.SessionId -> Aff (dom :: DOM.DOM, webStorage :: WebStorage.WebStorage | eff) (State uid userdata -> State uid userdata)
+withSessionId :: forall uid userdata eff err. Boolean -> RPC.SessionId -> Aff (dom :: DOM.DOM, webStorage :: WebStorage.WebStorage | eff) (State uid userdata err -> State uid userdata err)
 withSessionId redirect sessionId@(RPC.SessionId sid) = do
   liftEff $ do
     WebStorage.setItem WebStorage.localStorage "session" sid.unSessionId
@@ -214,15 +214,15 @@ withSessionId redirect sessionId@(RPC.SessionId sid) = do
       then return \st -> st { redirectingAfterLogin = true }
       else return \st -> st { sessionId = Just sessionId }
 
-performAction :: forall uid userdata err eff. (ToJSON userdata)
-              => T.PerformAction (Effects eff) (State uid userdata) (Config userdata err) (Action uid userdata)
+performAction :: forall uid userdata err eff. (ToJSON userdata, FromJSON err, ToJSON err)
+              => T.PerformAction (Effects eff) (State uid userdata err) (Config userdata err) (Action uid userdata err)
 performAction = handler
   where
     -- specialized sendSync
     sendSync :: forall b. (FromJSON b) => S.Socket -> (R.Proxy b -> UserCommand userdata err) -> Aff (Effects eff) (Either Error b)
     sendSync = R.sendSync
 
-    handler :: T.PerformAction (Effects eff) (State uid userdata) (Config userdata err) (Action uid userdata)
+    handler :: T.PerformAction (Effects eff) (State uid userdata err) (Config userdata err) (Action uid userdata err)
     handler Login props state = when (not $ state.loginState.loginLoading) $ do
       modify $ set (loginState <<< loginLoading) true
       sessionId <- lift $ sendSync props.socket $ RPC.AuthUser
@@ -279,7 +279,7 @@ performAction = handler
     handler (ScreenChanged screen) _ state = do
       modify $ \s -> s { screen = screen }
 
-spec :: forall uid userdata eff. (ToJSON userdata) => T.Spec (Effects eff) (State uid userdata) (Config userdata) (Action uid userdata)
+spec :: forall uid userdata eff err. (ToJSON userdata, FromJSON err, ToJSON err) => T.Spec (Effects eff) (State uid userdata err) (Config userdata err) (Action uid userdata err)
 spec = T.simpleSpec performAction render
 
 parseParams :: String -> Array (Tuple String String)
@@ -292,7 +292,7 @@ parseParams str = case stripPrefix "?" str of
 deleteSession :: forall eff. Eff (Effects eff) Unit
 deleteSession = WebStorage.removeItem WebStorage.localStorage "session"
 
-getState :: forall uid userdata eff. (ToJSON userdata) => Config userdata -> Aff (Effects eff) (Maybe (State uid userdata))
+getState :: forall uid userdata eff err. (ToJSON userdata, ToJSON err) => Config userdata err -> Aff (Effects eff) (Maybe (State uid userdata err))
 getState props = do
   window <- liftEff $ DOM.window
   location <- liftEff $ DOM.location window
@@ -302,7 +302,7 @@ getState props = do
   search <- liftEff $ DOM.search location
 
   let -- specialized sendSync
-      sendSync :: forall b. (FromJSON b) => S.Socket -> (R.Proxy b -> UserCommand userdata) -> Aff (Effects eff) (Either Error b)
+      sendSync :: forall b. (FromJSON b) => S.Socket -> (R.Proxy b -> UserCommand userdata err) -> Aff (Effects eff) (Either Error b)
       sendSync = R.sendSync
 
   if hash == "#" ++ props.redirectUrl
