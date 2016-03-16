@@ -30,7 +30,7 @@ data Action uid userdata err =
 
 data Screen = LoginScreen | RegisterScreen | ResetPasswordScreen
 
-type Locale err =
+type Locale err field =
   { name :: String
   , password :: String
   , repeatPassword :: String
@@ -48,14 +48,25 @@ type Locale err =
   , userCreatedSuccessfully :: String
 
   , userDataValidationError :: err -> String
+
+  , additionalFieldTitle :: field -> String
   }
 
-type Config userdata err =
+type Validator a b err = State a b err -> Boolean
+
+type Field uid userdata err field =
+  { field :: field
+  , set :: String -> userdata -> userdata
+  , validate :: Validator uid userdata err
+  }
+
+type Config uid userdata err field =
   { redirectUrl :: String
   , socket :: S.Socket
   , sessionLength :: Int
   , defaultUserData :: userdata
-  , locale :: Locale err
+  , locale :: Locale err field
+  , additionalFields :: Array (Field uid userdata err field)
   }
 
 type RegisterState err =

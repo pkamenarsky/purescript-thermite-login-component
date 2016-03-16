@@ -56,8 +56,6 @@ type UserCommand userdata = RPC.UserCommand userdata Int RPC.SessionId
 
 type Effects eff = (webStorage :: WebStorage.WebStorage, dom :: DOM.DOM, websocket :: S.WebSocket | eff)
 
-type Validator a b err = State a b err -> Boolean
-
 allValid :: forall a b err. State a b err -> Array (Validator a b err) -> Boolean
 allValid st = and <<< map ($ st)
 
@@ -90,7 +88,7 @@ button valid loading text className dispatch action =
         else R.text text
     ]
 
-render :: forall uid userdata err. T.Render (State uid userdata err) (Config userdata err) (Action uid userdata err)
+render :: forall uid userdata err field. T.Render (State uid userdata err) (Config uid userdata err field) (Action uid userdata err)
 render dispatch props state _
   | state.redirectingAfterLogin = []
   | otherwise = case state.screen of
@@ -214,15 +212,15 @@ withSessionId redirect sessionId@(RPC.SessionId sid) = do
       then return \st -> st { redirectingAfterLogin = true }
       else return \st -> st { sessionId = Just sessionId }
 
-performAction :: forall uid userdata err eff. (ToJSON userdata, FromJSON err, ToJSON err)
-              => T.PerformAction (Effects eff) (State uid userdata err) (Config userdata err) (Action uid userdata err)
+performAction :: forall uid userdata err field eff. (ToJSON userdata, FromJSON err, ToJSON err)
+              => T.PerformAction (Effects eff) (State uid userdata err) (Config uid userdata err field) (Action uid userdata err)
 performAction = handler
   where
     -- specialized sendSync
     sendSync :: forall b. (FromJSON b) => S.Socket -> (R.Proxy b -> UserCommand userdata err) -> Aff (Effects eff) (Either Error b)
     sendSync = R.sendSync
 
-    handler :: T.PerformAction (Effects eff) (State uid userdata err) (Config userdata err) (Action uid userdata err)
+    handler :: T.PerformAction (Effects eff) (State uid userdata err) (Config uid userdata err field) (Action uid userdata err)
     handler Login props state = when (not $ state.loginState.loginLoading) $ do
       modify $ set (loginState <<< loginLoading) true
       sessionId <- lift $ sendSync props.socket $ RPC.AuthUser
@@ -263,6 +261,7 @@ performAction = handler
              state.regState.regName
              state.regState.regEmail
              state.regState.regPassword
+             props.defaultUserData
       case r of
         Right (Left err) -> modify $ set (regState <<< regResult) (Just $ Left err)
         Right (Right _) -> do
@@ -279,7 +278,7 @@ performAction = handler
     handler (ScreenChanged screen) _ state = do
       modify $ \s -> s { screen = screen }
 
-spec :: forall uid userdata eff err. (ToJSON userdata, FromJSON err, ToJSON err) => T.Spec (Effects eff) (State uid userdata err) (Config userdata err) (Action uid userdata err)
+spec :: forall uid userdata eff err field. (ToJSON userdata, FromJSON err, ToJSON err) => T.Spec (Effects eff) (State uid userdata err) (Config uid userdata err field) (Action uid userdata err)
 spec = T.simpleSpec performAction render
 
 parseParams :: String -> Array (Tuple String String)
@@ -292,7 +291,7 @@ parseParams str = case stripPrefix "?" str of
 deleteSession :: forall eff. Eff (Effects eff) Unit
 deleteSession = WebStorage.removeItem WebStorage.localStorage "session"
 
-getState :: forall uid userdata eff err. (ToJSON userdata, ToJSON err) => Config userdata err -> Aff (Effects eff) (Maybe (State uid userdata err))
+getState :: forall uid userdata eff err field. (ToJSON userdata, ToJSON err) => Config uid userdata err field -> Aff (Effects eff) (Maybe (State uid userdata err))
 getState props = do
   window <- liftEff $ DOM.window
   location <- liftEff $ DOM.location window
@@ -307,7 +306,7 @@ getState props = do
 
   if hash == "#" ++ props.redirectUrl
     then do
-      token <- sendSync props.socket (RPC.AuthFacebook (origin ++ pathname ++ "#" ++ props.redirectUrl) (parseParams search) props.sessionLength)
+      token <- sendSync props.socket (RPC.AuthFacebook (origin ++ pathname ++ "#" ++ props.redirectUrl) (parseParams search) props.defaultUserData props.sessionLength)
 
       case token of
         Left _ -> return Nothing
