@@ -258,8 +258,7 @@ performAction = handler
     handler Logout props state = do
       lift $ liftEff $ WebStorage.removeItem WebStorage.localStorage "session"
       case state.sessionId of
-        Just sessionId -> do
-          void $ lift $ sendSync props (RPC.Logout sessionId)
+        Just sessionId -> void $ lift $ sendSync props (RPC.Logout sessionId)
         Nothing -> return unit
       modify \_ -> emptyState props.defaultUserData
 
