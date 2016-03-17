@@ -21,6 +21,8 @@ import Prelude
 import Network.WebSockets.Sync.Socket as S
 import Web.Users.Remote.Types.Shared as RPC
 
+type UserCommand uid userdata err = RPC.UserCommand userdata uid RPC.SessionId err
+
 data Action uid userdata err =
     Login
   | LoginWithFacebook
@@ -70,8 +72,7 @@ type Field userdata field =
 
 type Config uid userdata err field eff =
   { redirectUrl :: String
-  , socket :: S.Socket
-  , sendRequest :: RPC.UserCommand userdata uid RPC.SessionId err -> Aff eff (Either Error JValue)
+  , sendRequest :: UserCommand uid userdata err -> Aff eff JValue
   , sessionLength :: Int
   , defaultUserData :: userdata
   , locale :: Locale err field

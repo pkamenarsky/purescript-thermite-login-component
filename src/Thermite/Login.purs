@@ -3,10 +3,11 @@ module Thermite.Login (spec, getState, deleteSession, module Web.Users.Remote.Ty
 import Prelude
 
 import Data.Array (concat)
+import Data.Bifunctor (lmap)
 import Data.Either
 import Data.Foldable (and)
 import Data.Functor
-import Data.JSON
+import Data.JSON (class ToJSON, class FromJSON, parseJSON)
 import Data.Lens
 import Data.Maybe
 import Data.Nullable (toMaybe)
@@ -23,7 +24,7 @@ import Control.Monad
 import Control.Monad.Aff
 import Control.Monad.Eff
 import Control.Monad.Eff.Class
-import Control.Monad.Eff.Exception (Error)
+import Control.Monad.Eff.Exception (error, Error)
 import Control.Monad.Trans
 
 import Network.WebSockets.Sync.Socket as S
@@ -51,8 +52,6 @@ import Thermite.Login.Model
 import Thermite.Login.Model.Lenses
 
 import Debug.Trace
-
-type UserCommand userdata = RPC.UserCommand userdata Int RPC.SessionId
 
 type Effects eff = (webStorage :: WebStorage.WebStorage, dom :: DOM.DOM, websocket :: S.WebSocket | eff)
 
@@ -215,18 +214,17 @@ withSessionId redirect sessionId@(RPC.SessionId sid) = do
       then return \st -> st { redirectingAfterLogin = true }
       else return \st -> st { sessionId = Just sessionId }
 
-performAction :: forall uid userdata err field eff. (ToJSON userdata, FromJSON err, ToJSON err)
+sendSync :: forall uid userdata err field b eff. (FromJSON b, ToJSON userdata, ToJSON uid, FromJSON uid, FromJSON err, ToJSON err) => (Config uid userdata err field (Effects eff)) -> (R.Proxy b -> UserCommand uid userdata err) -> Aff (Effects eff) (Either Error b)
+sendSync cfg req = lmap error <$> parseJSON <$> cfg.sendRequest (req R.Proxy)
+
+performAction :: forall uid userdata err field eff. (ToJSON userdata, ToJSON uid, FromJSON uid, FromJSON err, ToJSON err)
               => T.PerformAction (Effects eff) (State uid userdata err) (Config uid userdata err field (Effects eff)) (Action uid userdata err)
 performAction = handler
   where
-    -- specialized sendSync
-    sendSync :: forall b. (FromJSON b) => S.Socket -> (R.Proxy b -> UserCommand userdata err) -> Aff (Effects eff) (Either Error b)
-    sendSync = R.sendSync
-
     handler :: T.PerformAction (Effects eff) (State uid userdata err) (Config uid userdata err field (Effects eff)) (Action uid userdata err)
     handler Login props state = when (not $ state.loginState.loginLoading) $ do
       modify $ set (loginState <<< loginLoading) true
-      sessionId <- lift $ sendSync props.socket $ RPC.AuthUser
+      sessionId <- lift $ sendSync props $ RPC.AuthUser
         state.loginState.loginName
         state.loginState.loginPassword
         props.sessionLength
@@ -245,7 +243,7 @@ performAction = handler
 
       liftEff $ WebStorage.setItem WebStorage.localStorage "href-before-login" href
 
-      facebookLoginUrl <- sendSync props.socket (RPC.AuthFacebookUrl (encodeURIComponent $ origin ++ pathname ++ "#" ++ props.redirectUrl) [])
+      facebookLoginUrl <- sendSync props (RPC.AuthFacebookUrl (encodeURIComponent $ origin ++ pathname ++ "#" ++ props.redirectUrl) [])
 
       case facebookLoginUrl of
         Right facebookLoginUrl -> liftEff $ DOM.replace facebookLoginUrl location
@@ -255,12 +253,12 @@ performAction = handler
       lift $ liftEff $ WebStorage.removeItem WebStorage.localStorage "session"
       case state.sessionId of
         Just sessionId -> do
-          void $ lift $ sendSync props.socket (RPC.Logout sessionId)
+          void $ lift $ sendSync props (RPC.Logout sessionId)
         Nothing -> return unit
       modify \_ -> emptyState props.defaultUserData
 
     handler Register props state = when (not $ state.regState.regLoading) $ do
-      r <- lift $ sendSync props.socket $ RPC.CreateUser
+      r <- lift $ sendSync props $ RPC.CreateUser
              state.regState.regName
              state.regState.regEmail
              state.regState.regPassword
@@ -281,7 +279,7 @@ performAction = handler
     handler (ScreenChanged screen) _ state = do
       modify $ \s -> s { screen = screen }
 
-spec :: forall uid userdata eff err field. (ToJSON userdata, FromJSON err, ToJSON err) => T.Spec (Effects eff) (State uid userdata err) (Config uid userdata err field (Effects eff)) (Action uid userdata err)
+spec :: forall uid userdata eff err field. (ToJSON userdata, FromJSON uid, ToJSON uid, FromJSON err, ToJSON err) => T.Spec (Effects eff) (State uid userdata err) (Config uid userdata err field (Effects eff)) (Action uid userdata err)
 spec = T.simpleSpec performAction render
 
 parseParams :: String -> Array (Tuple String String)
@@ -294,7 +292,7 @@ parseParams str = case stripPrefix "?" str of
 deleteSession :: forall eff. Eff (Effects eff) Unit
 deleteSession = WebStorage.removeItem WebStorage.localStorage "session"
 
-getState :: forall uid userdata eff err field. (ToJSON userdata, ToJSON err) => Config uid userdata err field (Effects eff) -> Aff (Effects eff) (Maybe (State uid userdata err))
+getState :: forall uid userdata eff err field. (ToJSON userdata, ToJSON uid, FromJSON uid, ToJSON err, FromJSON err) => Config uid userdata err field (Effects eff) -> Aff (Effects eff) (Maybe (State uid userdata err))
 getState props = do
   window <- liftEff $ DOM.window
   location <- liftEff $ DOM.location window
@@ -303,13 +301,9 @@ getState props = do
   hash <- liftEff $ DOM.hash location
   search <- liftEff $ DOM.search location
 
-  let -- specialized sendSync
-      sendSync :: forall b. (FromJSON b) => S.Socket -> (R.Proxy b -> UserCommand userdata err) -> Aff (Effects eff) (Either Error b)
-      sendSync = R.sendSync
-
   if hash == "#" ++ props.redirectUrl
     then do
-      token <- sendSync props.socket (RPC.AuthFacebook (origin ++ pathname ++ "#" ++ props.redirectUrl) (parseParams search) props.defaultUserData props.sessionLength)
+      token <- sendSync props (RPC.AuthFacebook (origin ++ pathname ++ "#" ++ props.redirectUrl) (parseParams search) props.defaultUserData props.sessionLength)
 
       case token of
         Left _ -> return Nothing

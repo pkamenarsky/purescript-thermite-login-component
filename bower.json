@@ -12,6 +12,7 @@
   ],
   "dependencies": {
     "purescript-console": "^0.1.0",
+    "purescript-bifunctors": "*",
     "purescript-sync-websockets": "^0.4.9",
     "purescript-profunctor-lenses": "*",
     "purescript-strings": "*",
