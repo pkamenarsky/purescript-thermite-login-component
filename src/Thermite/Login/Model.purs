@@ -7,6 +7,7 @@ import Data.Functor ((<$))
 import Data.Lens
 import Data.Either
 import Data.Maybe
+import Data.Tuple (Tuple)
 
 import Routing.Match as Routing
 import Routing.Match.Class as Routing
@@ -55,7 +56,9 @@ type Validator a b err = State a b err -> Boolean
 
 type Field uid userdata err field =
   { field :: field
-  , fieldLens :: Lens userdata userdata String String
+  -- FIXME: waiting on https://github.com/purescript/purescript/issues/1957
+  -- , fieldLens :: Lens userdata userdata String String
+  , fieldLens :: Tuple (userdata -> String) (userdata -> String -> userdata)
   , validate :: Validator uid userdata err
   }
 
