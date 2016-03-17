@@ -52,23 +52,26 @@ type Locale err field =
   , additionalFieldTitle :: field -> String
   }
 
-type Validator a b err = State a b err -> Boolean
+type Validator st = st -> Boolean
 
-type Field uid userdata err field =
+hoistValidator :: forall st1 st2. Lens st2 st2 st1 st1 -> Validator st1 -> Validator st2
+hoistValidator lens v st = v $ view lens st
+
+type Field userdata field =
   { field :: field
   -- FIXME: waiting on https://github.com/purescript/purescript/issues/1957
   -- , fieldLens :: Lens userdata userdata String String
   , fieldLens :: Tuple (userdata -> String) (userdata -> String -> userdata)
-  , validate :: Validator uid userdata err
+  , validate :: Validator userdata
   }
 
-type Config uid userdata err field =
+type Config userdata err field =
   { redirectUrl :: String
   , socket :: S.Socket
   , sessionLength :: Int
   , defaultUserData :: userdata
   , locale :: Locale err field
-  , additionalFields :: Array (Field uid userdata err field)
+  , additionalFields :: Array (Field userdata field)
   }
 
 type RegisterState userdata err =
@@ -141,7 +144,8 @@ emptyState userdata =
 
 -- Locales
 
-localeDe userDataValidationError =
+localeDe :: forall err field. (err -> String) -> (field -> String) -> Locale err field
+localeDe userDataValidationError additionalFieldTitle =
   { name: "Username"
   , password: "Passwort"
   , repeatPassword: "Passwort wiederholen"
@@ -157,6 +161,7 @@ localeDe userDataValidationError =
 
   , userCreatedSuccessfully: "User erfolgreich registriert"
   , userDataValidationError
+  , additionalFieldTitle
   }
 
 toRoute :: Screen -> String
