@@ -1,9 +1,12 @@
 module Thermite.Login.Model where
 
+import Control.Monad.Aff (Aff)
 import Control.Alt ((<|>))
 import Control.Apply ((<*))
+import Control.Monad.Eff.Exception (Error)
 
 import Data.Functor ((<$))
+import Data.JSON (JValue)
 import Data.Lens
 import Data.Either
 import Data.Maybe
@@ -65,9 +68,10 @@ type Field userdata field =
   , validate :: Validator userdata
   }
 
-type Config userdata err field =
+type Config uid userdata err field eff =
   { redirectUrl :: String
   , socket :: S.Socket
+  , sendRequest :: RPC.UserCommand userdata uid RPC.SessionId err -> Aff eff (Either Error JValue)
   , sessionLength :: Int
   , defaultUserData :: userdata
   , locale :: Locale err field
