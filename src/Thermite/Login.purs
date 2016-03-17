@@ -215,7 +215,7 @@ withSessionId redirect sessionId@(RPC.SessionId sid) = do
       else return \st -> st { sessionId = Just sessionId }
 
 sendSync :: forall uid userdata err field b eff. (FromJSON b, ToJSON userdata, ToJSON uid, FromJSON uid, FromJSON err, ToJSON err) => (Config uid userdata err field (Effects eff)) -> (R.Proxy b -> UserCommand uid userdata err) -> Aff (Effects eff) (Either Error b)
-sendSync cfg req = lmap error <$> parseJSON <$> cfg.sendRequest (req R.Proxy)
+sendSync cfg req = ((lmap error <$> parseJSON) =<<) <$> cfg.sendRequest (req R.Proxy)
 
 performAction :: forall uid userdata err field eff. (ToJSON userdata, ToJSON uid, FromJSON uid, FromJSON err, ToJSON err)
               => T.PerformAction (Effects eff) (State uid userdata err) (Config uid userdata err field (Effects eff)) (Action uid userdata err)

@@ -72,7 +72,7 @@ type Field userdata field =
 
 type Config uid userdata err field eff =
   { redirectUrl :: String
-  , sendRequest :: UserCommand uid userdata err -> Aff eff JValue
+  , sendRequest :: UserCommand uid userdata err -> Aff eff (Either Error JValue)
   , sessionLength :: Int
   , defaultUserData :: userdata
   , locale :: Locale err field
