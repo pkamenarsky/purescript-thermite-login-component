@@ -260,7 +260,7 @@ performAction = handler
              state.regState.regName
              state.regState.regEmail
              state.regState.regPassword
-             props.defaultUserData
+             state.regState.regUserData
       case r of
         Right (Left err) -> modify $ set (regState <<< regResult) (Just $ Left err)
         Right (Right _) -> do
