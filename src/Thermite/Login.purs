@@ -196,21 +196,26 @@ render dispatch props state _
 
       textinput = textinput' false validateAlways Nothing
 
+redirectToRoot :: forall eff. Eff (dom :: DOM.DOM, webStorage :: WebStorage.WebStorage | eff) Unit
+redirectToRoot = do
+  -- redirect to root
+  window <- liftEff $ DOM.window
+  location <- liftEff $ DOM.location window
+
+  href <- WebStorage.getItem WebStorage.localStorage "href-before-login"
+  WebStorage.removeItem WebStorage.localStorage "href-before-login"
+
+  case href of
+    Just href -> DOM.replace href location
+    Nothing -> return unit
+
 withSessionId :: forall uid userdata eff err. Boolean -> RPC.SessionId -> Aff (dom :: DOM.DOM, webStorage :: WebStorage.WebStorage | eff) (State uid userdata err -> State uid userdata err)
 withSessionId redirect sessionId@(RPC.SessionId sid) = do
   liftEff $ do
     WebStorage.setItem WebStorage.localStorage "session" sid.unSessionId
-
-    -- redirect to root
-    window <- liftEff $ DOM.window
-    location <- liftEff $ DOM.location window
-
-    href <- WebStorage.getItem WebStorage.localStorage "href-before-login"
     WebStorage.removeItem WebStorage.localStorage "href-before-login"
 
-    case href of
-      Just href -> if redirect then DOM.replace href location else return unit
-      Nothing -> return unit
+    when redirect redirectToRoot
 
     if redirect
       then return \st -> st { redirectingAfterLogin = true }
@@ -307,8 +312,14 @@ getState props = do
       token <- sendSync props (RPC.AuthFacebook (origin ++ pathname ++ "#" ++ props.redirectUrl) (parseParams search) props.defaultUserData props.sessionLength)
 
       case token of
-        Left _ -> return Nothing
-        Right (Left _) -> return Nothing
+        Left _ -> liftEff $ do
+          deleteSession
+          redirectToRoot
+          return Nothing
+        Right (Left _) -> liftEff $ do
+          deleteSession
+          redirectToRoot
+          return Nothing
         Right (Right sessionId) -> do
           with <- withSessionId true sessionId
           return $ Just (with $ emptyState props.defaultUserData)
