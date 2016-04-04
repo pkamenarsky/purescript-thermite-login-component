@@ -213,9 +213,10 @@ withSessionId :: forall uid userdata eff err. Boolean -> RPC.SessionId -> Aff (d
 withSessionId redirect sessionId@(RPC.SessionId sid) = do
   liftEff $ do
     WebStorage.setItem WebStorage.localStorage "session" sid.unSessionId
-    WebStorage.removeItem WebStorage.localStorage "href-before-login"
 
     when redirect redirectToRoot
+
+    WebStorage.removeItem WebStorage.localStorage "href-before-login"
 
     if redirect
       then return \st -> st { redirectingAfterLogin = true }
