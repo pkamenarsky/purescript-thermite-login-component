@@ -171,6 +171,9 @@ render dispatch props state _
               dispatch
               ResetPassword
           ]
+        , if state.resetPasswordState.resetShowSuccessMessage
+            then [ R.div [ RP.className "login-register-success" ] [ R.text $ props.locale.passwordResetMailSentSuccessfully ] ]
+            else []
         ]
 
       textinput' :: Boolean
@@ -274,17 +277,22 @@ performAction = handler
         Right (Left err) -> modify $ set (regState <<< regResult) (Just $ Left err)
         Right (Right _) -> do
           modify $ set (regState <<< regResult) (Just $ Right unit)
-          -- lift $ later' 1500 $ return unit -- delay for a bit before going back to login screen
-          -- modify $ set screen LoginScreen
+          lift $ later' 1500 $ return unit -- delay for a bit before going back to login screen
+          lift $ liftEff $ props.redirectToScreen LoginScreen
         Left  _ -> modify $ set (regState <<< regResult) Nothing
-    handler ResetPassword _ state = when (not $ state.resetPasswordState.resetLoading) $ do
-      modify $ set screen LoginScreen
+    handler ResetPassword props state = when (not $ state.resetPasswordState.resetLoading) $ do
+      modify $ set (resetPasswordState <<< resetLoading) true
+      lift $ sendSync props (RPC.ResetPassword state.resetPasswordState.resetEmail)
+      modify $ set (resetPasswordState <<< resetLoading) false
+           <<< set (resetPasswordState <<< resetShowSuccessMessage) true
+      lift $ later' 1500 $ return unit -- delay for a bit before going back to login screen
+      lift $ liftEff $ props.redirectToScreen LoginScreen
     handler (TextChanged lens v) _ state = do
       modify $ set lens v
-    handler (ChangeScreen screen) _ state = do
-      modify $ \s -> s { screen = screen }
-    handler (ScreenChanged screen) _ state = do
-      modify $ \s -> s { screen = screen }
+    handler (ChangeScreen screen) props state = do
+      modify $ \s -> (emptyState props.defaultUserData) { screen = screen, sessionId = s.sessionId }
+    handler (ScreenChanged screen) props state = do
+      lift $ liftEff $ props.redirectToScreen screen
 
 spec :: forall uid userdata eff err field. (ToJSON userdata, FromJSON uid, ToJSON uid, FromJSON err, ToJSON err) => T.Spec (Effects eff) (State uid userdata err) (Config uid userdata err field (Effects eff)) (Action uid userdata err)
 spec = T.simpleSpec performAction render

@@ -1,5 +1,6 @@
 module Thermite.Login.Model where
 
+import Control.Monad.Eff (Eff)
 import Control.Monad.Aff (Aff)
 import Control.Alt ((<|>))
 import Control.Apply ((<*))
@@ -52,6 +53,8 @@ type Locale err field =
 
   , userCreatedSuccessfully :: String
 
+  , passwordResetMailSentSuccessfully :: String
+
   , userDataValidationError :: err -> String
 
   , additionalFieldTitle :: field -> String
@@ -72,6 +75,7 @@ type Field userdata field =
 
 type Config uid userdata err field eff =
   { redirectUrl :: String
+  , redirectToScreen :: Screen -> Eff eff Unit
   , sendRequest :: UserCommand uid userdata err -> Aff eff (Either Error JValue)
   , sessionLength :: Int
   , defaultUserData :: userdata
@@ -120,12 +124,14 @@ emptyLoginState =
 type ResetPasswordState =
   { resetEmail :: String
   , resetLoading :: Boolean
+  , resetShowSuccessMessage :: Boolean
   }
 
 emptyResetPasswordState :: ResetPasswordState
 emptyResetPasswordState =
   { resetEmail: ""
   , resetLoading: false
+  , resetShowSuccessMessage: false
   }
 
 type State uid userdata err =
@@ -165,6 +171,7 @@ localeDe userDataValidationError additionalFieldTitle =
   , errUserOrEmailAlreadyTaken: "Username/Email existieren schon"
 
   , userCreatedSuccessfully: "User erfolgreich registriert"
+  , passwordResetMailSentSuccessfully: "Mail wurde versandt"
   , userDataValidationError
   , additionalFieldTitle
   }

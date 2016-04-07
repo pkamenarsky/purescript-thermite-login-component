@@ -102,6 +102,9 @@ errUserOrEmailAlreadyTaken = lens _."errUserOrEmailAlreadyTaken" (_ { "errUserOr
 userCreatedSuccessfully :: forall a b r. Lens { "userCreatedSuccessfully" :: a | r } { "userCreatedSuccessfully" :: b | r } a b
 userCreatedSuccessfully = lens _."userCreatedSuccessfully" (_ { "userCreatedSuccessfully" = _ })
 
+passwordResetMailSentSuccessfully :: forall a b r. Lens { "passwordResetMailSentSuccessfully" :: a | r } { "passwordResetMailSentSuccessfully" :: b | r } a b
+passwordResetMailSentSuccessfully = lens _."passwordResetMailSentSuccessfully" (_ { "passwordResetMailSentSuccessfully" = _ })
+
 userDataValidationError :: forall a b r. Lens { "userDataValidationError" :: a | r } { "userDataValidationError" :: b | r } a b
 userDataValidationError = lens _."userDataValidationError" (_ { "userDataValidationError" = _ })
 
@@ -111,8 +114,8 @@ additionalFieldTitle = lens _."additionalFieldTitle" (_ { "additionalFieldTitle"
 field :: forall a b r. Lens { "field" :: a | r } { "field" :: b | r } a b
 field = lens _."field" (_ { "field" = _ })
 
-setField :: forall a b r. Lens { "setField" :: a | r } { "setField" :: b | r } a b
-setField = lens _."setField" (_ { "setField" = _ })
+fieldLens :: forall a b r. Lens { "fieldLens" :: a | r } { "fieldLens" :: b | r } a b
+fieldLens = lens _."fieldLens" (_ { "fieldLens" = _ })
 
 validate :: forall a b r. Lens { "validate" :: a | r } { "validate" :: b | r } a b
 validate = lens _."validate" (_ { "validate" = _ })
@@ -120,8 +123,11 @@ validate = lens _."validate" (_ { "validate" = _ })
 redirectUrl :: forall a b r. Lens { "redirectUrl" :: a | r } { "redirectUrl" :: b | r } a b
 redirectUrl = lens _."redirectUrl" (_ { "redirectUrl" = _ })
 
-socket :: forall a b r. Lens { "socket" :: a | r } { "socket" :: b | r } a b
-socket = lens _."socket" (_ { "socket" = _ })
+redirectToScreen :: forall a b r. Lens { "redirectToScreen" :: a | r } { "redirectToScreen" :: b | r } a b
+redirectToScreen = lens _."redirectToScreen" (_ { "redirectToScreen" = _ })
+
+sendRequest :: forall a b r. Lens { "sendRequest" :: a | r } { "sendRequest" :: b | r } a b
+sendRequest = lens _."sendRequest" (_ { "sendRequest" = _ })
 
 sessionLength :: forall a b r. Lens { "sessionLength" :: a | r } { "sessionLength" :: b | r } a b
 sessionLength = lens _."sessionLength" (_ { "sessionLength" = _ })
@@ -173,6 +179,9 @@ resetEmail = lens _."resetEmail" (_ { "resetEmail" = _ })
 
 resetLoading :: forall a b r. Lens { "resetLoading" :: a | r } { "resetLoading" :: b | r } a b
 resetLoading = lens _."resetLoading" (_ { "resetLoading" = _ })
+
+resetShowSuccessMessage :: forall a b r. Lens { "resetShowSuccessMessage" :: a | r } { "resetShowSuccessMessage" :: b | r } a b
+resetShowSuccessMessage = lens _."resetShowSuccessMessage" (_ { "resetShowSuccessMessage" = _ })
 
 sessionId :: forall a b r. Lens { "sessionId" :: a | r } { "sessionId" :: b | r } a b
 sessionId = lens _."sessionId" (_ { "sessionId" = _ })
