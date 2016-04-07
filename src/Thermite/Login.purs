@@ -93,7 +93,7 @@ render dispatch props state _
     LoginScreen -> container renderLoginScreen
     RegisterScreen -> container renderRegisterScreen
     ResetPasswordScreen -> container renderResetPasswordScreen
-    SetNewPasswordScreen -> container renderSetNewPasswordScreen
+    SetNewPasswordScreen token -> container (renderSetNewPasswordScreen token)
 
     where
       container es = [ R.div [ RP.className "login-container" ] es ]
@@ -179,16 +179,16 @@ render dispatch props state _
             else []
         ]
 
-      renderSetNewPasswordScreen = concat
+      renderSetNewPasswordScreen token = concat
         [ textinput' true validateAlways Nothing props.locale.password (setNewPasswordState <<< setpwdPassword)
-        , textinput' true (hoistValidator setNewPasswordState $ validateRepeatPassword setpwdPassword setpwdRepeatPassword) (Just SetNewPassword) props.locale.repeatPassword (setNewPasswordState <<< setpwdRepeatPassword)
+        , textinput' true (hoistValidator setNewPasswordState $ validateRepeatPassword setpwdPassword setpwdRepeatPassword) (Just $ SetNewPassword token) props.locale.repeatPassword (setNewPasswordState <<< setpwdRepeatPassword)
         , [ button
               (validateRepeatPassword setpwdPassword setpwdRepeatPassword state.setNewPasswordState)
               state.setNewPasswordState.setpwdLoading
               props.locale.setPassword
               "login-button-register"
               dispatch
-              SetNewPassword
+              (SetNewPassword token)
           ]
         , if state.setNewPasswordState.setpwdShowSuccessMessage
             then [ R.div [ RP.className "login-register-success" ] [ R.text $ props.locale.newPasswordSetSuccessfully ] ]
@@ -306,9 +306,9 @@ performAction = handler
            <<< set (resetPasswordState <<< resetShowSuccessMessage) true
       lift $ later' 1500 $ return unit -- delay for a bit before going back to login screen
       lift $ liftEff $ props.redirectToScreen LoginScreen
-    handler SetNewPassword props state = when (not $ state.setNewPasswordState.setpwdLoading) $ do
+    handler (SetNewPassword token) props state = when (not $ state.setNewPasswordState.setpwdLoading) $ do
       modify $ set (setNewPasswordState <<< setpwdLoading) true
-      -- lift $ sendSync props (RPC.ResetPassword state.resetPasswordState.resetEmail)
+      lift $ sendSync props (RPC.SetNewPassword token state.setNewPasswordState.setpwdPassword)
       modify $ set (setNewPasswordState <<< setpwdLoading) false
            <<< set (setNewPasswordState <<< setpwdShowSuccessMessage) true
       lift $ later' 1500 $ return unit -- delay for a bit before going back to login screen

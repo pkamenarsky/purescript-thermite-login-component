@@ -36,10 +36,10 @@ _ResetPassword = prism (const ResetPassword) unwrap
   unwrap ResetPassword = Right unit
   unwrap y = Left y
 
-_SetNewPassword :: forall err userdata uid. PrismP (Action uid userdata err) Unit
-_SetNewPassword = prism (const SetNewPassword) unwrap
+_SetNewPassword :: forall err userdata uid. PrismP (Action uid userdata err) String
+_SetNewPassword = prism SetNewPassword unwrap
   where
-  unwrap SetNewPassword = Right unit
+  unwrap (SetNewPassword x) = Right x
   unwrap y = Left y
 
 _ChangeScreen :: forall err userdata uid. PrismP (Action uid userdata err) Screen
@@ -72,10 +72,10 @@ _ResetPasswordScreen = prism (const ResetPasswordScreen) unwrap
   unwrap ResetPasswordScreen = Right unit
   unwrap y = Left y
 
-_SetNewPasswordScreen :: PrismP Screen Unit
-_SetNewPasswordScreen = prism (const SetNewPasswordScreen) unwrap
+_SetNewPasswordScreen :: PrismP Screen String
+_SetNewPasswordScreen = prism SetNewPasswordScreen unwrap
   where
-  unwrap SetNewPasswordScreen = Right unit
+  unwrap (SetNewPasswordScreen x) = Right x
   unwrap y = Left y
 
 name :: forall a b r. Lens { "name" :: a | r } { "name" :: b | r } a b
@@ -101,6 +101,9 @@ forgotPassword = lens _."forgotPassword" (_ { "forgotPassword" = _ })
 
 register :: forall a b r. Lens { "register" :: a | r } { "register" :: b | r } a b
 register = lens _."register" (_ { "register" = _ })
+
+setPassword :: forall a b r. Lens { "setPassword" :: a | r } { "setPassword" :: b | r } a b
+setPassword = lens _."setPassword" (_ { "setPassword" = _ })
 
 loginWithFacebook :: forall a b r. Lens { "loginWithFacebook" :: a | r } { "loginWithFacebook" :: b | r } a b
 loginWithFacebook = lens _."loginWithFacebook" (_ { "loginWithFacebook" = _ })

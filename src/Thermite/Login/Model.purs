@@ -30,13 +30,13 @@ data Action uid userdata err =
   | Logout
   | Register
   | ResetPassword
-  | SetNewPassword
+  | SetNewPassword String
 
   | ChangeScreen Screen
   | ScreenChanged Screen
   | TextChanged (Lens (State uid userdata err) (State uid userdata err) String String) String
 
-data Screen = LoginScreen | RegisterScreen | ResetPasswordScreen | SetNewPasswordScreen
+data Screen = LoginScreen | RegisterScreen | ResetPasswordScreen | SetNewPasswordScreen String
 
 type Locale err field =
   { name :: String
@@ -203,10 +203,10 @@ toRoute :: Screen -> String
 toRoute LoginScreen = ""
 toRoute RegisterScreen = "register"
 toRoute ResetPasswordScreen = "reset"
-toRoute SetNewPasswordScreen = "setpwd"
+toRoute (SetNewPasswordScreen _) = "setpwd"
 
 loginMatch :: Routing.Match Screen
 loginMatch = LoginScreen <$ Routing.lit ""
          <|> RegisterScreen <$ Routing.lit "register"
          <|> ResetPasswordScreen <$ Routing.lit "reset"
-         <|> SetNewPasswordScreen <$ Routing.lit "setpwd"
+         <|> SetNewPasswordScreen <$ Routing.lit "setpwd" <*> Routing.str
