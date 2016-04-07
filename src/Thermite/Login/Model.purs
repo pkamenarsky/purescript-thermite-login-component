@@ -203,8 +203,10 @@ toRoute :: Screen -> String
 toRoute LoginScreen = ""
 toRoute RegisterScreen = "register"
 toRoute ResetPasswordScreen = "reset"
+toRoute SetNewPasswordScreen = "setpwd"
 
 loginMatch :: Routing.Match Screen
 loginMatch = LoginScreen <$ Routing.lit ""
          <|> RegisterScreen <$ Routing.lit "register"
          <|> ResetPasswordScreen <$ Routing.lit "reset"
+         <|> SetNewPasswordScreen <$ Routing.lit "setpwd"
