@@ -36,6 +36,12 @@ _ResetPassword = prism (const ResetPassword) unwrap
   unwrap ResetPassword = Right unit
   unwrap y = Left y
 
+_SetNewPassword :: forall err userdata uid. PrismP (Action uid userdata err) Unit
+_SetNewPassword = prism (const SetNewPassword) unwrap
+  where
+  unwrap SetNewPassword = Right unit
+  unwrap y = Left y
+
 _ChangeScreen :: forall err userdata uid. PrismP (Action uid userdata err) Screen
 _ChangeScreen = prism ChangeScreen unwrap
   where
@@ -64,6 +70,12 @@ _ResetPasswordScreen :: PrismP Screen Unit
 _ResetPasswordScreen = prism (const ResetPasswordScreen) unwrap
   where
   unwrap ResetPasswordScreen = Right unit
+  unwrap y = Left y
+
+_SetNewPasswordScreen :: PrismP Screen Unit
+_SetNewPasswordScreen = prism (const SetNewPasswordScreen) unwrap
+  where
+  unwrap SetNewPasswordScreen = Right unit
   unwrap y = Left y
 
 name :: forall a b r. Lens { "name" :: a | r } { "name" :: b | r } a b
@@ -104,6 +116,9 @@ userCreatedSuccessfully = lens _."userCreatedSuccessfully" (_ { "userCreatedSucc
 
 passwordResetMailSentSuccessfully :: forall a b r. Lens { "passwordResetMailSentSuccessfully" :: a | r } { "passwordResetMailSentSuccessfully" :: b | r } a b
 passwordResetMailSentSuccessfully = lens _."passwordResetMailSentSuccessfully" (_ { "passwordResetMailSentSuccessfully" = _ })
+
+newPasswordSetSuccessfully :: forall a b r. Lens { "newPasswordSetSuccessfully" :: a | r } { "newPasswordSetSuccessfully" :: b | r } a b
+newPasswordSetSuccessfully = lens _."newPasswordSetSuccessfully" (_ { "newPasswordSetSuccessfully" = _ })
 
 userDataValidationError :: forall a b r. Lens { "userDataValidationError" :: a | r } { "userDataValidationError" :: b | r } a b
 userDataValidationError = lens _."userDataValidationError" (_ { "userDataValidationError" = _ })
@@ -183,6 +198,18 @@ resetLoading = lens _."resetLoading" (_ { "resetLoading" = _ })
 resetShowSuccessMessage :: forall a b r. Lens { "resetShowSuccessMessage" :: a | r } { "resetShowSuccessMessage" :: b | r } a b
 resetShowSuccessMessage = lens _."resetShowSuccessMessage" (_ { "resetShowSuccessMessage" = _ })
 
+setpwdPassword :: forall a b r. Lens { "setpwdPassword" :: a | r } { "setpwdPassword" :: b | r } a b
+setpwdPassword = lens _."setpwdPassword" (_ { "setpwdPassword" = _ })
+
+setpwdRepeatPassword :: forall a b r. Lens { "setpwdRepeatPassword" :: a | r } { "setpwdRepeatPassword" :: b | r } a b
+setpwdRepeatPassword = lens _."setpwdRepeatPassword" (_ { "setpwdRepeatPassword" = _ })
+
+setpwdShowSuccessMessage :: forall a b r. Lens { "setpwdShowSuccessMessage" :: a | r } { "setpwdShowSuccessMessage" :: b | r } a b
+setpwdShowSuccessMessage = lens _."setpwdShowSuccessMessage" (_ { "setpwdShowSuccessMessage" = _ })
+
+setpwdLoading :: forall a b r. Lens { "setpwdLoading" :: a | r } { "setpwdLoading" :: b | r } a b
+setpwdLoading = lens _."setpwdLoading" (_ { "setpwdLoading" = _ })
+
 sessionId :: forall a b r. Lens { "sessionId" :: a | r } { "sessionId" :: b | r } a b
 sessionId = lens _."sessionId" (_ { "sessionId" = _ })
 
@@ -200,3 +227,6 @@ loginState = lens _."loginState" (_ { "loginState" = _ })
 
 resetPasswordState :: forall a b r. Lens { "resetPasswordState" :: a | r } { "resetPasswordState" :: b | r } a b
 resetPasswordState = lens _."resetPasswordState" (_ { "resetPasswordState" = _ })
+
+setNewPasswordState :: forall a b r. Lens { "setNewPasswordState" :: a | r } { "setNewPasswordState" :: b | r } a b
+setNewPasswordState = lens _."setNewPasswordState" (_ { "setNewPasswordState" = _ })

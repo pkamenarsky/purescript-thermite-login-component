@@ -30,12 +30,13 @@ data Action uid userdata err =
   | Logout
   | Register
   | ResetPassword
+  | SetNewPassword
 
   | ChangeScreen Screen
   | ScreenChanged Screen
   | TextChanged (Lens (State uid userdata err) (State uid userdata err) String String) String
 
-data Screen = LoginScreen | RegisterScreen | ResetPasswordScreen
+data Screen = LoginScreen | RegisterScreen | ResetPasswordScreen | SetNewPasswordScreen
 
 type Locale err field =
   { name :: String
@@ -46,6 +47,7 @@ type Locale err field =
   , email :: String
   , forgotPassword :: String
   , register :: String
+  , setPassword :: String
   , loginWithFacebook :: String
 
   , errUserOrPasswordIncorrect :: String
@@ -54,6 +56,8 @@ type Locale err field =
   , userCreatedSuccessfully :: String
 
   , passwordResetMailSentSuccessfully :: String
+
+  , newPasswordSetSuccessfully :: String
 
   , userDataValidationError :: err -> String
 
@@ -134,6 +138,21 @@ emptyResetPasswordState =
   , resetShowSuccessMessage: false
   }
 
+type SetNewPasswordState =
+  { setpwdPassword :: String
+  , setpwdRepeatPassword :: String
+  , setpwdShowSuccessMessage :: Boolean
+  , setpwdLoading :: Boolean
+  }
+
+emptySetNewPasswordState :: SetNewPasswordState
+emptySetNewPasswordState =
+  { setpwdPassword: ""
+  , setpwdRepeatPassword: ""
+  , setpwdShowSuccessMessage: false
+  , setpwdLoading: false
+  }
+
 type State uid userdata err =
   { sessionId :: Maybe RPC.SessionId
   , redirectingAfterLogin :: Boolean
@@ -141,6 +160,7 @@ type State uid userdata err =
   , regState :: RegisterState userdata err
   , loginState :: LoginState
   , resetPasswordState :: ResetPasswordState
+  , setNewPasswordState :: SetNewPasswordState
   }
 
 emptyState :: forall uid userdata err. userdata -> State uid userdata err
@@ -151,6 +171,7 @@ emptyState userdata =
   , regState: emptyRegisterState userdata
   , loginState: emptyLoginState
   , resetPasswordState: emptyResetPasswordState
+  , setNewPasswordState: emptySetNewPasswordState
   }
 
 -- Locales
@@ -165,6 +186,7 @@ localeDe userDataValidationError additionalFieldTitle =
   , email: "Email"
   , forgotPassword: "Passwort vergessen"
   , register: "Registrieren"
+  , setPassword: "Passwort setzen"
   , loginWithFacebook: "Mit Facebook einloggen"
 
   , errUserOrPasswordIncorrect: "Username/Passwort falsch"
@@ -172,6 +194,7 @@ localeDe userDataValidationError additionalFieldTitle =
 
   , userCreatedSuccessfully: "User erfolgreich registriert"
   , passwordResetMailSentSuccessfully: "Mail wurde versandt"
+  , newPasswordSetSuccessfully: "Passwort wurde gesetzt"
   , userDataValidationError
   , additionalFieldTitle
   }
