@@ -86,6 +86,68 @@ button valid loading text className dispatch action =
         else R.text text
     ]
 
+renderTextinput' :: forall uid userdata err field eff.
+                   (Action uid userdata err -> T.EventHandler)
+                -> (Config uid userdata err field (Effects eff))
+                -> (State uid userdata err)
+                -> Boolean
+                -> Validator (State uid userdata err)
+                -> Maybe (Action uid userdata err)
+                -> String
+                -> Lens (State uid userdata err) (State uid userdata err) String String
+                -> _
+renderTextinput' dispatch props state pwd validate onEnter text lens =
+  [ R.input
+    [ RP.onChange \e -> dispatch $ TextChanged lens ((unsafeCoerce e).target.value)
+    , RP.onKeyDown \e -> case onEnter of
+        Just action | e.keyCode == 13 -> dispatch action
+        _ -> return unit
+    , RP.value (state ^. lens)
+    , RP.placeholder text
+    , if validate state
+         then RP.className "login-input"
+         else RP.className "login-input login-input-error"
+    , if pwd then RP._type "password" else RP._type ""
+    ] []
+  ]
+
+renderTextinput dispatch props state = renderTextinput' dispatch props state false validateAlways Nothing
+
+registerMask :: forall uid userdata err field eff. Mask (State uid userdata err) (Config uid userdata err field (Effects eff)) (Action uid userdata err)
+registerMask =
+  { render: \dispatch props state _ ->
+    let textinput' = renderTextinput' dispatch props state
+        textinput = renderTextinput dispatch props state
+        in concat
+          [ textinput props.locale.name (regState <<< regName)
+          , textinput props.locale.email (regState <<< regEmail)
+          , concat $ flip map props.additionalFields \af ->
+              textinput (props.locale.additionalFieldTitle af.field)
+                        (regState <<< regUserData <<< uncurry lens af.fieldLens)
+          , textinput' true validateAlways Nothing props.locale.password (regState <<< regPassword)
+          , textinput' true (hoistValidator regState $ validateRepeatPassword regPassword regRepeatPassword) (Just Register) props.locale.repeatPassword (regState <<< regRepeatPassword)
+          , [ button
+                ( allValid state
+                  $ [ hoistValidator regState validateEmail
+                    , hoistValidator regState $ validateRepeatPassword regPassword regRepeatPassword
+                    ]
+                    ++ map (\f -> hoistValidator (regState <<< regUserData) f.validate)
+                           props.additionalFields
+                )
+                state.regState.regLoading
+                props.locale.register
+                "login-button-register"
+                dispatch
+                Register
+            ]
+          , case state.regState.regResult of
+              Just (Left (RPC.CreateUserValidationError err)) -> [ R.div [ RP.className "login-register-error" ] [ R.text $ props.locale.userDataValidationError err ] ]
+              Just (Left _) -> [ R.div [ RP.className "login-register-error" ] [ R.text props.locale.errUserOrEmailAlreadyTaken ] ]
+              Just (Right _) ->  [ R.div [ RP.className "login-register-success" ] [ R.text props.locale.userCreatedSuccessfully ] ]
+              _ ->  []
+          ]
+  }
+
 render :: forall uid userdata err field eff. T.Render (State uid userdata err) (Config uid userdata err field (Effects eff)) (Action uid userdata err)
 render dispatch props state _
   | state.redirectingAfterLogin = []

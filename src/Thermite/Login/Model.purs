@@ -18,6 +18,9 @@ import Routing.Match.Class as Routing
 
 import DOM.HTML.Types as DOM
 
+import React as R
+import Thermite as T
+
 import Prelude
 import Network.WebSockets.Sync.Socket as S
 import Web.Users.Remote.Types.Shared as RPC
@@ -77,6 +80,10 @@ type Field userdata field =
   , validate :: Validator userdata
   }
 
+type Mask state props action =
+  { render :: T.Render state props action
+  }
+
 type Config uid userdata err field eff =
   { redirectUrl :: String
   , redirectToScreen :: Screen -> Eff eff Unit
@@ -85,6 +92,7 @@ type Config uid userdata err field eff =
   , defaultUserData :: userdata
   , locale :: Locale err field
   , additionalFields :: Array (Field userdata field)
+  , registerMask :: Mask (RegisterState userdata err) Unit (Action uid userdata err)
   }
 
 type RegisterState userdata err =
