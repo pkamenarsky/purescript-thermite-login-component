@@ -25,6 +25,7 @@ import Prelude
 import Network.WebSockets.Sync.Socket as S
 import Web.Users.Remote.Types.Shared as RPC
 
+
 type UserCommand uid userdata err = RPC.UserCommand userdata uid RPC.SessionId err
 
 data Action uid userdata err =
@@ -72,16 +73,16 @@ type Validator st = st -> Boolean
 hoistValidator :: forall st1 st2. Lens st2 st2 st1 st1 -> Validator st1 -> Validator st2
 hoistValidator lens v st = v $ view lens st
 
+type Mask state props action =
+  { render :: T.Render state props action
+  }
+
 type Field userdata field =
   { field :: field
   -- FIXME: waiting on https://github.com/purescript/purescript/issues/1957
   -- , fieldLens :: Lens userdata userdata String String
   , fieldLens :: Tuple (userdata -> String) (userdata -> String -> userdata)
   , validate :: Validator userdata
-  }
-
-type Mask state props action =
-  { render :: T.Render state props action
   }
 
 type Config uid userdata err field eff =
@@ -92,7 +93,7 @@ type Config uid userdata err field eff =
   , defaultUserData :: userdata
   , locale :: Locale err field
   , additionalFields :: Array (Field userdata field)
-  , registerMask :: Mask (RegisterState userdata err) Unit (Action uid userdata err)
+  , registerMask :: Mask (RegisterState userdata err) { locale :: Locale err field } (Action uid userdata err)
   }
 
 type RegisterState userdata err =
