@@ -132,6 +132,9 @@ performAction = handler
     handler (SubLoginAction (LoginScreenChanged screen)) props state = do
       lift $ liftEff $ props.redirectToScreen screen
 
+    handler (SubLoginAction cmd) props state = do
+      view T._performAction (T.focusState loginState props.loginMask) cmd { locale: props.locale } state
+
     handler Logout props state = do
       lift $ liftEff $ WebStorage.removeItem WebStorage.localStorage "session"
       case state.sessionId of
@@ -153,6 +156,9 @@ performAction = handler
           lift $ liftEff $ props.redirectToScreen LoginScreen
         Left  _ -> modify $ set (regState <<< regResult) Nothing
 
+    handler (SubRegisterAction cmd) props state = do
+      view T._performAction (T.focusState regState props.registerMask) cmd { locale: props.locale } state
+
     handler (SubResetAction ResetPassword) props state = when (not $ state.resetPasswordState.resetLoading) $ do
       modify $ set (resetPasswordState <<< resetLoading) true
       lift $ sendSync props (RPC.ResetPassword state.resetPasswordState.resetEmail)
@@ -161,6 +167,9 @@ performAction = handler
       lift $ later' 1500 $ return unit -- delay for a bit before going back to login screen
       lift $ liftEff $ props.redirectToScreen LoginScreen
 
+    handler (SubResetAction cmd) props state = do
+      view T._performAction (T.focusState resetPasswordState props.resetPasswordMask) cmd { locale: props.locale } state
+
     handler (SubSetNewPasswordAction (SetNewPassword token)) props state = when (not $ state.setNewPasswordState.setpwdLoading) $ do
       modify $ set (setNewPasswordState <<< setpwdLoading) true
       lift $ sendSync props (RPC.SetNewPassword token state.setNewPasswordState.setpwdPassword)
@@ -168,6 +177,10 @@ performAction = handler
            <<< set (setNewPasswordState <<< setpwdShowSuccessMessage) true
       lift $ later' 1500 $ return unit -- delay for a bit before going back to login screen
       lift $ liftEff $ props.redirectToScreen LoginScreen
+
+    handler (SubSetNewPasswordAction cmd) props state = do
+      view T._performAction (T.focusState setNewPasswordState props.setNewPasswordMask) cmd { locale: props.locale, token: "" } state
+
     handler (ChangeScreen screen) props state = do
       modify $ \s -> (emptyState props.defaultUserData) { screen = screen, sessionId = s.sessionId }
 
