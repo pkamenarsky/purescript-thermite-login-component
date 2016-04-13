@@ -1,8 +1,13 @@
 module Thermite.Login.Masks where
 
+import Control.Monad.Aff (Aff)
+import Control.Monad.Eff (Eff)
+import Control.Monad.Eff.Exception (Error)
+
 import Data.Array (concat)
 import Data.Either
 import Data.Foldable (and)
+import Data.JSON (JValue)
 import Data.Lens
 import Data.Maybe
 import Data.String (null)
@@ -223,15 +228,24 @@ setNewPasswordMask = T.simpleSpec performAction render
 
 --------------------------------------------------------------------------------
 
-defaultConfig :: forall userdata custom eff err.
-  { registerMask :: T.Spec eff (RegisterState userdata err) (RegisterConfig custom) (RegisterAction userdata err)
-  , loginMask :: T.Spec eff LoginState (LoginConfig custom) LoginAction
-  , resetPasswordMask :: T.Spec eff ResetPasswordState (ResetConfig custom) ResetAction
-  , setNewPasswordMask :: T.Spec eff SetNewPasswordState (SetNewPasswordConfig custom) SetNewPasswordAction
-  }
-defaultConfig =
+defaultConfig :: forall uid userdata custom eff err.
+  { redirectUrl :: String
+  , redirectToScreen :: Screen -> Eff eff Unit
+  , sendRequest :: UserCommand uid userdata err -> Aff eff (Either Error JValue)
+  , sessionLength :: Int
+  , defaultUserData :: userdata
+  , locale :: Locale custom
+  } -> Config uid userdata err custom eff
+defaultConfig cfg =
   { registerMask
   , loginMask
   , resetPasswordMask
   , setNewPasswordMask
+
+  , redirectUrl: cfg.redirectUrl
+  , redirectToScreen: cfg.redirectToScreen
+  , sendRequest: cfg.sendRequest
+  , sessionLength: cfg.sessionLength
+  , defaultUserData: cfg.defaultUserData
+  , locale: cfg.locale
   }
