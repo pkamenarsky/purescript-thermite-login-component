@@ -196,8 +196,8 @@ resetPasswordMask = T.simpleSpec performAction render
 
 --------------------------------------------------------------------------------
 
-setNewPasswordPasswordMask :: forall userdata err custom eff. T.Spec eff SetNewPasswordState (SetNewPasswordConfig custom) SetNewPasswordAction
-setNewPasswordPasswordMask = T.simpleSpec performAction render
+setNewPasswordMask :: forall userdata err custom eff. T.Spec eff SetNewPasswordState (SetNewPasswordConfig custom) SetNewPasswordAction
+setNewPasswordMask = T.simpleSpec performAction render
   where
   performAction (SetNewPasswordTextChanged f) props state = modify f
   performAction (SetNewPassword _) props state = return unit
@@ -220,3 +220,18 @@ setNewPasswordPasswordMask = T.simpleSpec performAction render
     where
     textinput' = renderTextinput' dispatch props state SetNewPasswordTextChanged
     textinput = renderTextinput dispatch props state SetNewPasswordTextChanged
+
+--------------------------------------------------------------------------------
+
+defaultConfig :: forall userdata custom eff err.
+  { registerMask :: T.Spec eff (RegisterState userdata err) (RegisterConfig custom) (RegisterAction userdata err)
+  , loginMask :: T.Spec eff LoginState (LoginConfig custom) LoginAction
+  , resetPasswordMask :: T.Spec eff ResetPasswordState (ResetConfig custom) ResetAction
+  , setNewPasswordMask :: T.Spec eff SetNewPasswordState (SetNewPasswordConfig custom) SetNewPasswordAction
+  }
+defaultConfig =
+  { registerMask
+  , loginMask
+  , resetPasswordMask
+  , setNewPasswordMask
+  }
