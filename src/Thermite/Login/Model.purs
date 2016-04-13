@@ -29,20 +29,18 @@ import Web.Users.Remote.Types.Shared as RPC
 type UserCommand uid userdata err = RPC.UserCommand userdata uid RPC.SessionId err
 
 data Action uid userdata err =
-    Login
-  | LoginWithFacebook
-  | Logout
-  | Register
+    Logout
+  | SubRegisterAction (RegisterAction userdata err)
+  | SubLoginAction LoginAction
   | ResetPassword
   | SetNewPassword String
 
   | ChangeScreen Screen
-  | ScreenChanged Screen
   | TextChanged (Lens (State uid userdata err) (State uid userdata err) String String) String
 
 data Screen = LoginScreen | RegisterScreen | ResetPasswordScreen | SetNewPasswordScreen String
 
-type Locale err field =
+type Locale custom =
   { name :: String
   , password :: String
   , repeatPassword :: String
@@ -63,9 +61,7 @@ type Locale err field =
 
   , newPasswordSetSuccessfully :: String
 
-  , userDataValidationError :: err -> String
-
-  , additionalFieldTitle :: field -> String
+  , custom :: custom
   }
 
 type Validator st = st -> Boolean
@@ -73,28 +69,25 @@ type Validator st = st -> Boolean
 hoistValidator :: forall st1 st2. Lens st2 st2 st1 st1 -> Validator st1 -> Validator st2
 hoistValidator lens v st = v $ view lens st
 
-type Mask state props action =
-  { render :: T.Render state props action
-  }
-
-type Field userdata field =
-  { field :: field
-  -- FIXME: waiting on https://github.com/purescript/purescript/issues/1957
-  -- , fieldLens :: Lens userdata userdata String String
-  , fieldLens :: Tuple (userdata -> String) (userdata -> String -> userdata)
-  , validate :: Validator userdata
-  }
-
-type Config uid userdata err field eff =
+type Config uid userdata err custom eff =
   { redirectUrl :: String
   , redirectToScreen :: Screen -> Eff eff Unit
   , sendRequest :: UserCommand uid userdata err -> Aff eff (Either Error JValue)
   , sessionLength :: Int
   , defaultUserData :: userdata
-  , locale :: Locale err field
-  , additionalFields :: Array (Field userdata field)
-  , registerMask :: Mask (RegisterState userdata err) { locale :: Locale err field } (Action uid userdata err)
+  , locale :: Locale custom
+
+  , registerMask :: T.Spec eff (RegisterState userdata err) (RegisterConfig custom) (RegisterAction userdata err)
+  , loginMask :: T.Spec eff LoginState (LoginConfig custom) LoginAction
   }
+
+-- Register mask ---------------------------------------------------------------
+
+data RegisterAction userdata err =
+    RegisterTextChanged (RegisterState userdata err -> RegisterState userdata err)
+  | Register
+
+type RegisterConfig custom = { locale :: Locale custom }
 
 type RegisterState userdata err =
   { regName :: String
@@ -119,6 +112,16 @@ emptyRegisterState regUserData =
   , regResult: Nothing
   }
 
+-- Login mask ------------------------------------------------------------------
+
+data LoginAction =
+    LoginTextChanged (LoginState -> LoginState)
+  | Login
+  | LoginWithFacebook
+  | LoginScreenChanged Screen
+
+type LoginConfig custom = { locale :: Locale custom }
+
 type LoginState =
   { loginName :: String
   , loginPassword :: String
@@ -134,6 +137,8 @@ emptyLoginState =
   , loginLoading: false
   }
 
+-- Reset passwor mask ----------------------------------------------------------
+
 type ResetPasswordState =
   { resetEmail :: String
   , resetLoading :: Boolean
@@ -146,6 +151,8 @@ emptyResetPasswordState =
   , resetLoading: false
   , resetShowSuccessMessage: false
   }
+
+-- Set new password mask -------------------------------------------------------
 
 type SetNewPasswordState =
   { setpwdPassword :: String
@@ -161,6 +168,8 @@ emptySetNewPasswordState =
   , setpwdShowSuccessMessage: false
   , setpwdLoading: false
   }
+
+-- Global state ----------------------------------------------------------------
 
 type State uid userdata err =
   { sessionId :: Maybe RPC.SessionId
@@ -183,10 +192,10 @@ emptyState userdata =
   , setNewPasswordState: emptySetNewPasswordState
   }
 
--- Locales
+-- Locales ---------------------------------------------------------------------
 
-localeDe :: forall err field. (err -> String) -> (field -> String) -> Locale err field
-localeDe userDataValidationError additionalFieldTitle =
+localeDe :: forall custom. custom -> Locale custom
+localeDe custom =
   { name: "Username"
   , password: "Passwort"
   , repeatPassword: "Passwort wiederholen"
@@ -204,9 +213,11 @@ localeDe userDataValidationError additionalFieldTitle =
   , userCreatedSuccessfully: "User erfolgreich registriert"
   , passwordResetMailSentSuccessfully: "Mail wurde versandt"
   , newPasswordSetSuccessfully: "Passwort wurde gesetzt"
-  , userDataValidationError
-  , additionalFieldTitle
+
+  , custom
   }
+
+-- Routing ---------------------------------------------------------------------
 
 toRoute :: Screen -> String
 toRoute LoginScreen = ""

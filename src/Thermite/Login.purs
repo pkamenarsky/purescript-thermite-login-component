@@ -60,79 +60,13 @@ render :: forall uid userdata err field eff. T.Render (State uid userdata err) (
 render dispatch props state _
   | state.redirectingAfterLogin = []
   | otherwise = case state.screen of
-    LoginScreen -> container renderLoginScreen
-    RegisterScreen -> container renderRegisterScreen
+    -- LoginScreen -> container renderLoginScreen
+    RegisterScreen -> container $ view T._render props.registerMask (dispatch <<< SubRegisterAction) { locale: props.locale } state.regState []
     ResetPasswordScreen -> container renderResetPasswordScreen
     SetNewPasswordScreen token -> container (renderSetNewPasswordScreen token)
 
     where
       container es = [ R.div [ RP.className "login-container" ] es ]
-      renderLoginScreen = concat
-        [ textinput props.locale.name (loginState <<< loginName)
-        , textinput' true validateAlways (if state.loginState.loginLoading then Nothing else Just Login) props.locale.password (loginState <<< loginPassword)
-        , [ button
-              true
-              state.loginState.loginLoading
-              props.locale.login
-              "login-button-login"
-              dispatch
-              Login
-          , R.div
-            [ RP.className "login-text-container" ]
-            [ R.div
-              [ RP.onClick \_ -> dispatch (ScreenChanged ResetPasswordScreen)
-              , RP.className "login-text-forgot-password"
-              ]
-              [ R.text props.locale.forgotPassword ]
-            , R.div
-              [ RP.onClick \_ -> dispatch (ScreenChanged RegisterScreen)
-              , RP.className "login-text-register"
-              ]
-              [ R.text props.locale.register ]
-            ]
-          , R.div [ RP.className "login-divider" ] []
-          , R.div
-            [ RP.onClick \_ -> dispatch LoginWithFacebook
-            , RP.className "login-button-facebook"
-            ]
-            [ R.text props.locale.loginWithFacebook ]
-          ]
-        , if state.loginState.loginError
-             then [ R.div
-                    [ RP.className "login-error" ]
-                    [ R.text props.locale.errUserOrPasswordIncorrect ]
-                  ]
-             else [ ]
-        ]
-
-      renderRegisterScreen = concat
-        [ textinput props.locale.name (regState <<< regName)
-        , textinput props.locale.email (regState <<< regEmail)
-        , concat $ flip map props.additionalFields \af ->
-            textinput (props.locale.additionalFieldTitle af.field)
-                      (regState <<< regUserData <<< uncurry lens af.fieldLens)
-        , textinput' true validateAlways Nothing props.locale.password (regState <<< regPassword)
-        , textinput' true (hoistValidator regState $ validateRepeatPassword regPassword regRepeatPassword) (Just Register) props.locale.repeatPassword (regState <<< regRepeatPassword)
-        , [ button
-              ( allValid state
-                $ [ hoistValidator regState validateEmail
-                  , hoistValidator regState $ validateRepeatPassword regPassword regRepeatPassword
-                  ]
-                  ++ map (\f -> hoistValidator (regState <<< regUserData) f.validate)
-                         props.additionalFields
-              )
-              state.regState.regLoading
-              props.locale.register
-              "login-button-register"
-              dispatch
-              Register
-          ]
-        , case state.regState.regResult of
-            Just (Left (RPC.CreateUserValidationError err)) -> [ R.div [ RP.className "login-register-error" ] [ R.text $ props.locale.userDataValidationError err ] ]
-            Just (Left _) -> [ R.div [ RP.className "login-register-error" ] [ R.text props.locale.errUserOrEmailAlreadyTaken ] ]
-            Just (Right _) ->  [ R.div [ RP.className "login-register-success" ] [ R.text props.locale.userCreatedSuccessfully ] ]
-            _ ->  []
-        ]
 
       renderResetPasswordScreen = concat
         [ textinput' false validateAlways (Just ResetPassword) props.locale.email (resetPasswordState <<< resetEmail)
@@ -222,7 +156,8 @@ performAction :: forall uid userdata err field eff. (ToJSON userdata, ToJSON uid
 performAction = handler
   where
     handler :: T.PerformAction (Effects eff) (State uid userdata err) (Config uid userdata err field (Effects eff)) (Action uid userdata err)
-    handler Login props state = when (not $ state.loginState.loginLoading) $ do
+
+    handler (SubLoginAction Login) props state = when (not $ state.loginState.loginLoading) $ do
       modify $ set (loginState <<< loginLoading) true
       sessionId <- lift $ sendSync props $ RPC.AuthUser
         state.loginState.loginName
@@ -234,7 +169,7 @@ performAction = handler
         _ -> modify $ set (loginState <<< loginLoading) false
                   <<< set (loginState <<< loginError) true
 
-    handler LoginWithFacebook props state = lift $ do
+    handler (SubLoginAction LoginWithFacebook) props state = lift $ do
       window <- liftEff $ DOM.window
       location <- liftEff $ DOM.location window
       origin <- liftEff $ DOM.origin location
@@ -249,6 +184,9 @@ performAction = handler
         Right facebookLoginUrl -> liftEff $ DOM.replace facebookLoginUrl location
         Left _ -> return unit
 
+    handler (SubLoginAction (LoginScreenChanged screen)) props state = do
+      lift $ liftEff $ props.redirectToScreen screen
+
     handler Logout props state = do
       lift $ liftEff $ WebStorage.removeItem WebStorage.localStorage "session"
       case state.sessionId of
@@ -256,7 +194,7 @@ performAction = handler
         Nothing -> return unit
       modify \_ -> emptyState props.defaultUserData
 
-    handler Register props state = when (not $ state.regState.regLoading) $ do
+    handler (SubRegisterAction Register) props state = when (not $ state.regState.regLoading) $ do
       r <- lift $ sendSync props $ RPC.CreateUser
              state.regState.regName
              state.regState.regEmail
@@ -287,8 +225,6 @@ performAction = handler
       modify $ set lens v
     handler (ChangeScreen screen) props state = do
       modify $ \s -> (emptyState props.defaultUserData) { screen = screen, sessionId = s.sessionId }
-    handler (ScreenChanged screen) props state = do
-      lift $ liftEff $ props.redirectToScreen screen
 
 spec :: forall uid userdata eff err field. (ToJSON userdata, FromJSON uid, ToJSON uid, FromJSON err, ToJSON err) => T.Spec (Effects eff) (State uid userdata err) (Config uid userdata err field (Effects eff)) (Action uid userdata err)
 spec = T.simpleSpec performAction render

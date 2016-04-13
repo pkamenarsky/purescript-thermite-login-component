@@ -11,6 +11,7 @@ import Data.Tuple
 import React as R
 import React.DOM as R
 import React.DOM.Props as RP
+import Thermite (modify, get)
 import Thermite as T
 
 import Unsafe.Coerce (unsafeCoerce)
@@ -83,40 +84,85 @@ renderTextinput dispatch props state onChange = renderTextinput' dispatch props 
 
 --------------------------------------------------------------------------------
 
-data RegisterAction userdata err =
-  RegisterTextChanged (RegisterState userdata err -> RegisterState userdata err)
-  | RegisterRegister
-
-type RegisterConfig err field = { locale :: Locale err field }
-
-registerMask :: forall uid userdata err field eff. T.Spec eff (RegisterState userdata err) (RegisterConfig err field) (RegisterAction userdata err)
+registerMask :: forall userdata err custom eff. T.Spec eff (RegisterState userdata err) (RegisterConfig custom) (RegisterAction userdata err)
 registerMask = T.simpleSpec performAction render
   where
-  performAction action props state = return unit
+  performAction (RegisterTextChanged f) props state = modify f
+  performAction Register props state = return unit
 
-  render dispatch props state _ =
-    let textinput' = renderTextinput' dispatch props state RegisterTextChanged
-        textinput = renderTextinput dispatch props state (unsafeCoerce unit)
-        in concat
-          [ textinput props.locale.name regName
-          , textinput props.locale.email regEmail
-          , textinput' true validateAlways Nothing props.locale.password regPassword
-          , textinput' true (validateRepeatPassword regPassword regRepeatPassword) (Just RegisterRegister) props.locale.repeatPassword regRepeatPassword
-          , [ button
-                ( allValid state
-                  $ [ validateEmail
-                    , validateRepeatPassword regPassword regRepeatPassword
-                    ]
-                )
-                state.regLoading
-                props.locale.register
-                "login-button-register"
-                dispatch
-                RegisterRegister
-            ]
-          , case state.regResult of
-              Just (Left (RPC.CreateUserValidationError err)) -> [ R.div [ RP.className "login-register-error" ] [ R.text $ props.locale.userDataValidationError err ] ]
-              Just (Left _) -> [ R.div [ RP.className "login-register-error" ] [ R.text props.locale.errUserOrEmailAlreadyTaken ] ]
-              Just (Right _) ->  [ R.div [ RP.className "login-register-success" ] [ R.text props.locale.userCreatedSuccessfully ] ]
-              _ ->  []
+  render dispatch props state _ = concat
+    [ textinput props.locale.name regName
+    , textinput props.locale.email regEmail
+    , textinput' true validateAlways Nothing props.locale.password regPassword
+    , textinput' true (validateRepeatPassword regPassword regRepeatPassword) (Just Register) props.locale.repeatPassword regRepeatPassword
+    , [ button
+          ( allValid state
+            $ [ validateEmail
+              , validateRepeatPassword regPassword regRepeatPassword
+              ]
+          )
+          state.regLoading
+          props.locale.register
+          "login-button-register"
+          dispatch
+          Register
+      ]
+    , case state.regResult of
+        Just (Left _) -> [ R.div [ RP.className "login-register-error" ] [ R.text props.locale.errUserOrEmailAlreadyTaken ] ]
+        Just (Right _) ->  [ R.div [ RP.className "login-register-success" ] [ R.text props.locale.userCreatedSuccessfully ] ]
+        _ ->  []
+    ]
+    where
+    textinput' = renderTextinput' dispatch props state RegisterTextChanged
+    textinput = renderTextinput dispatch props state RegisterTextChanged
+
+
+--------------------------------------------------------------------------------
+
+loginMask :: forall custom eff. T.Spec eff LoginState (LoginConfig custom) LoginAction
+loginMask = T.simpleSpec performAction render
+  where
+  performAction (LoginTextChanged f) props state = modify f
+  performAction Login props state = return unit
+  performAction LoginWithFacebook props state = return unit
+
+  render dispatch props state _ = concat
+    [ textinput props.locale.name loginName
+    , textinput' true validateAlways (if state.loginLoading then Nothing else Just Login) props.locale.password loginPassword
+    , [ button
+          true
+          state.loginLoading
+          props.locale.login
+          "login-button-login"
+          dispatch
+          Login
+      , R.div
+        [ RP.className "login-text-container" ]
+        [ R.div
+          [ RP.onClick \_ -> dispatch (LoginScreenChanged ResetPasswordScreen)
+          , RP.className "login-text-forgot-password"
           ]
+          [ R.text props.locale.forgotPassword ]
+        , R.div
+          [ RP.onClick \_ -> dispatch (LoginScreenChanged RegisterScreen)
+          , RP.className "login-text-register"
+          ]
+          [ R.text props.locale.register ]
+        ]
+      , R.div [ RP.className "login-divider" ] []
+      , R.div
+        [ RP.onClick \_ -> dispatch LoginWithFacebook
+        , RP.className "login-button-facebook"
+        ]
+        [ R.text props.locale.loginWithFacebook ]
+      ]
+    , if state.loginError
+         then [ R.div
+                [ RP.className "login-error" ]
+                [ R.text props.locale.errUserOrPasswordIncorrect ]
+              ]
+         else [ ]
+    ]
+    where
+    textinput' = renderTextinput' dispatch props state LoginTextChanged
+    textinput = renderTextinput dispatch props state LoginTextChanged

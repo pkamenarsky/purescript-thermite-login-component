@@ -6,28 +6,22 @@ import Data.Either (Either(..))
 import Thermite.Login.Model
 
 
-_Login :: forall err userdata uid. PrismP (Action uid userdata err) Unit
-_Login = prism (const Login) unwrap
-  where
-  unwrap Login = Right unit
-  unwrap y = Left y
-
-_LoginWithFacebook :: forall err userdata uid. PrismP (Action uid userdata err) Unit
-_LoginWithFacebook = prism (const LoginWithFacebook) unwrap
-  where
-  unwrap LoginWithFacebook = Right unit
-  unwrap y = Left y
-
 _Logout :: forall err userdata uid. PrismP (Action uid userdata err) Unit
 _Logout = prism (const Logout) unwrap
   where
   unwrap Logout = Right unit
   unwrap y = Left y
 
-_Register :: forall err userdata uid. PrismP (Action uid userdata err) Unit
-_Register = prism (const Register) unwrap
+_SubRegisterAction :: forall err userdata uid. PrismP (Action uid userdata err) (RegisterAction userdata err)
+_SubRegisterAction = prism SubRegisterAction unwrap
   where
-  unwrap Register = Right unit
+  unwrap (SubRegisterAction x) = Right x
+  unwrap y = Left y
+
+_SubLoginAction :: forall err userdata uid. PrismP (Action uid userdata err) LoginAction
+_SubLoginAction = prism SubLoginAction unwrap
+  where
+  unwrap (SubLoginAction x) = Right x
   unwrap y = Left y
 
 _ResetPassword :: forall err userdata uid. PrismP (Action uid userdata err) Unit
@@ -46,12 +40,6 @@ _ChangeScreen :: forall err userdata uid. PrismP (Action uid userdata err) Scree
 _ChangeScreen = prism ChangeScreen unwrap
   where
   unwrap (ChangeScreen x) = Right x
-  unwrap y = Left y
-
-_ScreenChanged :: forall err userdata uid. PrismP (Action uid userdata err) Screen
-_ScreenChanged = prism ScreenChanged unwrap
-  where
-  unwrap (ScreenChanged x) = Right x
   unwrap y = Left y
 
 _LoginScreen :: PrismP Screen Unit
@@ -123,20 +111,8 @@ passwordResetMailSentSuccessfully = lens _."passwordResetMailSentSuccessfully" (
 newPasswordSetSuccessfully :: forall a b r. Lens { "newPasswordSetSuccessfully" :: a | r } { "newPasswordSetSuccessfully" :: b | r } a b
 newPasswordSetSuccessfully = lens _."newPasswordSetSuccessfully" (_ { "newPasswordSetSuccessfully" = _ })
 
-userDataValidationError :: forall a b r. Lens { "userDataValidationError" :: a | r } { "userDataValidationError" :: b | r } a b
-userDataValidationError = lens _."userDataValidationError" (_ { "userDataValidationError" = _ })
-
-additionalFieldTitle :: forall a b r. Lens { "additionalFieldTitle" :: a | r } { "additionalFieldTitle" :: b | r } a b
-additionalFieldTitle = lens _."additionalFieldTitle" (_ { "additionalFieldTitle" = _ })
-
-field :: forall a b r. Lens { "field" :: a | r } { "field" :: b | r } a b
-field = lens _."field" (_ { "field" = _ })
-
-fieldLens :: forall a b r. Lens { "fieldLens" :: a | r } { "fieldLens" :: b | r } a b
-fieldLens = lens _."fieldLens" (_ { "fieldLens" = _ })
-
-validate :: forall a b r. Lens { "validate" :: a | r } { "validate" :: b | r } a b
-validate = lens _."validate" (_ { "validate" = _ })
+custom :: forall a b r. Lens { "custom" :: a | r } { "custom" :: b | r } a b
+custom = lens _."custom" (_ { "custom" = _ })
 
 redirectUrl :: forall a b r. Lens { "redirectUrl" :: a | r } { "redirectUrl" :: b | r } a b
 redirectUrl = lens _."redirectUrl" (_ { "redirectUrl" = _ })
@@ -153,11 +129,23 @@ sessionLength = lens _."sessionLength" (_ { "sessionLength" = _ })
 defaultUserData :: forall a b r. Lens { "defaultUserData" :: a | r } { "defaultUserData" :: b | r } a b
 defaultUserData = lens _."defaultUserData" (_ { "defaultUserData" = _ })
 
-locale :: forall a b r. Lens { "locale" :: a | r } { "locale" :: b | r } a b
-locale = lens _."locale" (_ { "locale" = _ })
+registerMask :: forall a b r. Lens { "registerMask" :: a | r } { "registerMask" :: b | r } a b
+registerMask = lens _."registerMask" (_ { "registerMask" = _ })
 
-additionalFields :: forall a b r. Lens { "additionalFields" :: a | r } { "additionalFields" :: b | r } a b
-additionalFields = lens _."additionalFields" (_ { "additionalFields" = _ })
+loginMask :: forall a b r. Lens { "loginMask" :: a | r } { "loginMask" :: b | r } a b
+loginMask = lens _."loginMask" (_ { "loginMask" = _ })
+
+_RegisterTextChanged :: forall err userdata. PrismP (RegisterAction userdata err) (RegisterState userdata err -> RegisterState userdata err)
+_RegisterTextChanged = prism RegisterTextChanged unwrap
+  where
+  unwrap (RegisterTextChanged x) = Right x
+  unwrap y = Left y
+
+_Register :: forall err userdata. PrismP (RegisterAction userdata err) Unit
+_Register = prism (const Register) unwrap
+  where
+  unwrap Register = Right unit
+  unwrap y = Left y
 
 regName :: forall a b r. Lens { "regName" :: a | r } { "regName" :: b | r } a b
 regName = lens _."regName" (_ { "regName" = _ })
@@ -179,6 +167,33 @@ regUserData = lens _."regUserData" (_ { "regUserData" = _ })
 
 regResult :: forall a b r. Lens { "regResult" :: a | r } { "regResult" :: b | r } a b
 regResult = lens _."regResult" (_ { "regResult" = _ })
+
+_LoginTextChanged :: PrismP LoginAction (LoginState -> LoginState)
+_LoginTextChanged = prism LoginTextChanged unwrap
+  where
+  unwrap (LoginTextChanged x) = Right x
+  unwrap y = Left y
+
+_Login :: PrismP LoginAction Unit
+_Login = prism (const Login) unwrap
+  where
+  unwrap Login = Right unit
+  unwrap y = Left y
+
+_LoginWithFacebook :: PrismP LoginAction Unit
+_LoginWithFacebook = prism (const LoginWithFacebook) unwrap
+  where
+  unwrap LoginWithFacebook = Right unit
+  unwrap y = Left y
+
+_LoginScreenChanged :: PrismP LoginAction Screen
+_LoginScreenChanged = prism LoginScreenChanged unwrap
+  where
+  unwrap (LoginScreenChanged x) = Right x
+  unwrap y = Left y
+
+locale :: forall a b r. Lens { "locale" :: a | r } { "locale" :: b | r } a b
+locale = lens _."locale" (_ { "locale" = _ })
 
 loginName :: forall a b r. Lens { "loginName" :: a | r } { "loginName" :: b | r } a b
 loginName = lens _."loginName" (_ { "loginName" = _ })
