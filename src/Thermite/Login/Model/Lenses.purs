@@ -24,16 +24,16 @@ _SubLoginAction = prism SubLoginAction unwrap
   unwrap (SubLoginAction x) = Right x
   unwrap y = Left y
 
-_ResetPassword :: forall err userdata uid. PrismP (Action uid userdata err) Unit
-_ResetPassword = prism (const ResetPassword) unwrap
+_SubResetAction :: forall err userdata uid. PrismP (Action uid userdata err) ResetAction
+_SubResetAction = prism SubResetAction unwrap
   where
-  unwrap ResetPassword = Right unit
+  unwrap (SubResetAction x) = Right x
   unwrap y = Left y
 
-_SetNewPassword :: forall err userdata uid. PrismP (Action uid userdata err) String
-_SetNewPassword = prism SetNewPassword unwrap
+_SubSetNewPasswordAction :: forall err userdata uid. PrismP (Action uid userdata err) SetNewPasswordAction
+_SubSetNewPasswordAction = prism SubSetNewPasswordAction unwrap
   where
-  unwrap (SetNewPassword x) = Right x
+  unwrap (SubSetNewPasswordAction x) = Right x
   unwrap y = Left y
 
 _ChangeScreen :: forall err userdata uid. PrismP (Action uid userdata err) Screen
@@ -129,11 +129,20 @@ sessionLength = lens _."sessionLength" (_ { "sessionLength" = _ })
 defaultUserData :: forall a b r. Lens { "defaultUserData" :: a | r } { "defaultUserData" :: b | r } a b
 defaultUserData = lens _."defaultUserData" (_ { "defaultUserData" = _ })
 
+locale :: forall a b r. Lens { "locale" :: a | r } { "locale" :: b | r } a b
+locale = lens _."locale" (_ { "locale" = _ })
+
 registerMask :: forall a b r. Lens { "registerMask" :: a | r } { "registerMask" :: b | r } a b
 registerMask = lens _."registerMask" (_ { "registerMask" = _ })
 
 loginMask :: forall a b r. Lens { "loginMask" :: a | r } { "loginMask" :: b | r } a b
 loginMask = lens _."loginMask" (_ { "loginMask" = _ })
+
+resetPasswordMask :: forall a b r. Lens { "resetPasswordMask" :: a | r } { "resetPasswordMask" :: b | r } a b
+resetPasswordMask = lens _."resetPasswordMask" (_ { "resetPasswordMask" = _ })
+
+setNewPasswordMask :: forall a b r. Lens { "setNewPasswordMask" :: a | r } { "setNewPasswordMask" :: b | r } a b
+setNewPasswordMask = lens _."setNewPasswordMask" (_ { "setNewPasswordMask" = _ })
 
 _RegisterTextChanged :: forall err userdata. PrismP (RegisterAction userdata err) (RegisterState userdata err -> RegisterState userdata err)
 _RegisterTextChanged = prism RegisterTextChanged unwrap
@@ -192,9 +201,6 @@ _LoginScreenChanged = prism LoginScreenChanged unwrap
   unwrap (LoginScreenChanged x) = Right x
   unwrap y = Left y
 
-locale :: forall a b r. Lens { "locale" :: a | r } { "locale" :: b | r } a b
-locale = lens _."locale" (_ { "locale" = _ })
-
 loginName :: forall a b r. Lens { "loginName" :: a | r } { "loginName" :: b | r } a b
 loginName = lens _."loginName" (_ { "loginName" = _ })
 
@@ -207,6 +213,18 @@ loginError = lens _."loginError" (_ { "loginError" = _ })
 loginLoading :: forall a b r. Lens { "loginLoading" :: a | r } { "loginLoading" :: b | r } a b
 loginLoading = lens _."loginLoading" (_ { "loginLoading" = _ })
 
+_ResetTextChanged :: PrismP ResetAction (ResetPasswordState -> ResetPasswordState)
+_ResetTextChanged = prism ResetTextChanged unwrap
+  where
+  unwrap (ResetTextChanged x) = Right x
+  unwrap y = Left y
+
+_ResetPassword :: PrismP ResetAction Unit
+_ResetPassword = prism (const ResetPassword) unwrap
+  where
+  unwrap ResetPassword = Right unit
+  unwrap y = Left y
+
 resetEmail :: forall a b r. Lens { "resetEmail" :: a | r } { "resetEmail" :: b | r } a b
 resetEmail = lens _."resetEmail" (_ { "resetEmail" = _ })
 
@@ -215,6 +233,18 @@ resetLoading = lens _."resetLoading" (_ { "resetLoading" = _ })
 
 resetShowSuccessMessage :: forall a b r. Lens { "resetShowSuccessMessage" :: a | r } { "resetShowSuccessMessage" :: b | r } a b
 resetShowSuccessMessage = lens _."resetShowSuccessMessage" (_ { "resetShowSuccessMessage" = _ })
+
+_SetNewPasswordTextChanged :: PrismP SetNewPasswordAction (SetNewPasswordState -> SetNewPasswordState)
+_SetNewPasswordTextChanged = prism SetNewPasswordTextChanged unwrap
+  where
+  unwrap (SetNewPasswordTextChanged x) = Right x
+  unwrap y = Left y
+
+_SetNewPassword :: PrismP SetNewPasswordAction String
+_SetNewPassword = prism SetNewPassword unwrap
+  where
+  unwrap (SetNewPassword x) = Right x
+  unwrap y = Left y
 
 setpwdPassword :: forall a b r. Lens { "setpwdPassword" :: a | r } { "setpwdPassword" :: b | r } a b
 setpwdPassword = lens _."setpwdPassword" (_ { "setpwdPassword" = _ })

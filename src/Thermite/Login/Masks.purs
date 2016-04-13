@@ -125,6 +125,7 @@ loginMask = T.simpleSpec performAction render
   performAction (LoginTextChanged f) props state = modify f
   performAction Login props state = return unit
   performAction LoginWithFacebook props state = return unit
+  performAction (LoginScreenChanged _) props state = return unit
 
   render dispatch props state _ = concat
     [ textinput props.locale.name loginName
@@ -166,3 +167,29 @@ loginMask = T.simpleSpec performAction render
     where
     textinput' = renderTextinput' dispatch props state LoginTextChanged
     textinput = renderTextinput dispatch props state LoginTextChanged
+
+--------------------------------------------------------------------------------
+
+resetPasswordMask :: forall userdata err custom eff. T.Spec eff ResetPasswordState (ResetConfig custom) ResetAction
+resetPasswordMask = T.simpleSpec performAction render
+  where
+  performAction (ResetTextChanged f) props state = modify f
+  performAction ResetPassword props state = return unit
+
+  render dispatch props state _ = concat
+    [ textinput' false validateAlways (Just ResetPassword) props.locale.email resetEmail
+    , [ button
+          true
+          state.resetLoading
+          props.locale.resetPassword
+          "login-button-reset-password"
+          dispatch
+          ResetPassword
+      ]
+    , if state.resetShowSuccessMessage
+        then [ R.div [ RP.className "login-register-success" ] [ R.text $ props.locale.passwordResetMailSentSuccessfully ] ]
+        else []
+    ]
+    where
+    textinput' = renderTextinput' dispatch props state ResetTextChanged
+    textinput = renderTextinput dispatch props state ResetTextChanged

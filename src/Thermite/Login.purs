@@ -60,29 +60,15 @@ render :: forall uid userdata err field eff. T.Render (State uid userdata err) (
 render dispatch props state _
   | state.redirectingAfterLogin = []
   | otherwise = case state.screen of
-    -- LoginScreen -> container renderLoginScreen
+    LoginScreen -> container $ view T._render props.loginMask (dispatch <<< SubLoginAction) { locale: props.locale } state.loginState []
     RegisterScreen -> container $ view T._render props.registerMask (dispatch <<< SubRegisterAction) { locale: props.locale } state.regState []
-    ResetPasswordScreen -> container renderResetPasswordScreen
-    SetNewPasswordScreen token -> container (renderSetNewPasswordScreen token)
+    ResetPasswordScreen -> container $ view T._render props.resetPasswordMask (dispatch <<< SubResetAction) { locale: props.locale } state.resetPasswordState []
+    -- SetNewPasswordScreen token -> container (renderSetNewPasswordScreen token)
 
     where
       container es = [ R.div [ RP.className "login-container" ] es ]
 
-      renderResetPasswordScreen = concat
-        [ textinput' false validateAlways (Just ResetPassword) props.locale.email (resetPasswordState <<< resetEmail)
-        , [ button
-              true
-              state.resetPasswordState.resetLoading
-              props.locale.resetPassword
-              "login-button-reset-password"
-              dispatch
-              ResetPassword
-          ]
-        , if state.resetPasswordState.resetShowSuccessMessage
-            then [ R.div [ RP.className "login-register-success" ] [ R.text $ props.locale.passwordResetMailSentSuccessfully ] ]
-            else []
-        ]
-
+      {-
       renderSetNewPasswordScreen token = concat
         [ textinput' true validateAlways Nothing props.locale.password (setNewPasswordState <<< setpwdPassword)
         , textinput' true (hoistValidator setNewPasswordState $ validateRepeatPassword setpwdPassword setpwdRepeatPassword) (Just $ SetNewPassword token) props.locale.repeatPassword (setNewPasswordState <<< setpwdRepeatPassword)
@@ -121,6 +107,7 @@ render dispatch props state _
         ]
 
       textinput = textinput' false validateAlways Nothing
+    -}
 
 redirectToRoot :: forall eff. Eff (dom :: DOM.DOM, webStorage :: WebStorage.WebStorage | eff) Unit
 redirectToRoot = do
@@ -207,22 +194,22 @@ performAction = handler
           lift $ later' 1500 $ return unit -- delay for a bit before going back to login screen
           lift $ liftEff $ props.redirectToScreen LoginScreen
         Left  _ -> modify $ set (regState <<< regResult) Nothing
-    handler ResetPassword props state = when (not $ state.resetPasswordState.resetLoading) $ do
+
+    handler (SubResetAction ResetPassword) props state = when (not $ state.resetPasswordState.resetLoading) $ do
       modify $ set (resetPasswordState <<< resetLoading) true
       lift $ sendSync props (RPC.ResetPassword state.resetPasswordState.resetEmail)
       modify $ set (resetPasswordState <<< resetLoading) false
            <<< set (resetPasswordState <<< resetShowSuccessMessage) true
       lift $ later' 1500 $ return unit -- delay for a bit before going back to login screen
       lift $ liftEff $ props.redirectToScreen LoginScreen
-    handler (SetNewPassword token) props state = when (not $ state.setNewPasswordState.setpwdLoading) $ do
+
+    handler (SubSetNewPasswordAction (SetNewPassword token)) props state = when (not $ state.setNewPasswordState.setpwdLoading) $ do
       modify $ set (setNewPasswordState <<< setpwdLoading) true
       lift $ sendSync props (RPC.SetNewPassword token state.setNewPasswordState.setpwdPassword)
       modify $ set (setNewPasswordState <<< setpwdLoading) false
            <<< set (setNewPasswordState <<< setpwdShowSuccessMessage) true
       lift $ later' 1500 $ return unit -- delay for a bit before going back to login screen
       lift $ liftEff $ props.redirectToScreen LoginScreen
-    handler (TextChanged lens v) _ state = do
-      modify $ set lens v
     handler (ChangeScreen screen) props state = do
       modify $ \s -> (emptyState props.defaultUserData) { screen = screen, sessionId = s.sessionId }
 

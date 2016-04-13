@@ -32,13 +32,16 @@ data Action uid userdata err =
     Logout
   | SubRegisterAction (RegisterAction userdata err)
   | SubLoginAction LoginAction
-  | ResetPassword
-  | SetNewPassword String
+  | SubResetAction ResetAction
+  | SubSetNewPasswordAction SetNewPasswordAction
 
   | ChangeScreen Screen
-  | TextChanged (Lens (State uid userdata err) (State uid userdata err) String String) String
 
-data Screen = LoginScreen | RegisterScreen | ResetPasswordScreen | SetNewPasswordScreen String
+data Screen =
+    LoginScreen
+  | RegisterScreen
+  | ResetPasswordScreen
+  | SetNewPasswordScreen String
 
 type Locale custom =
   { name :: String
@@ -79,6 +82,8 @@ type Config uid userdata err custom eff =
 
   , registerMask :: T.Spec eff (RegisterState userdata err) (RegisterConfig custom) (RegisterAction userdata err)
   , loginMask :: T.Spec eff LoginState (LoginConfig custom) LoginAction
+  , resetPasswordMask :: T.Spec eff ResetPasswordState (ResetConfig custom) ResetAction
+  , setNewPasswordMask :: T.Spec eff SetNewPasswordState (SetNewPasswordConfig custom) SetNewPasswordAction
   }
 
 -- Register mask ---------------------------------------------------------------
@@ -139,6 +144,12 @@ emptyLoginState =
 
 -- Reset passwor mask ----------------------------------------------------------
 
+data ResetAction =
+    ResetTextChanged (ResetPasswordState -> ResetPasswordState)
+  | ResetPassword
+
+type ResetConfig custom = { locale :: Locale custom }
+
 type ResetPasswordState =
   { resetEmail :: String
   , resetLoading :: Boolean
@@ -153,6 +164,12 @@ emptyResetPasswordState =
   }
 
 -- Set new password mask -------------------------------------------------------
+
+data SetNewPasswordAction =
+    SetNewPasswordTextChanged (SetNewPasswordState -> SetNewPasswordState)
+  | SetNewPassword String
+
+type SetNewPasswordConfig custom = { locale :: Locale custom }
 
 type SetNewPasswordState =
   { setpwdPassword :: String
