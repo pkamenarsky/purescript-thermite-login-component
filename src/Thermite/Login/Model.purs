@@ -169,7 +169,7 @@ data SetNewPasswordAction =
     SetNewPasswordTextChanged (SetNewPasswordState -> SetNewPasswordState)
   | SetNewPassword String
 
-type SetNewPasswordConfig custom = { locale :: Locale custom }
+type SetNewPasswordConfig custom = { locale :: Locale custom, token :: String }
 
 type SetNewPasswordState =
   { setpwdPassword :: String

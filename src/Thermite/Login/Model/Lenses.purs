@@ -129,9 +129,6 @@ sessionLength = lens _."sessionLength" (_ { "sessionLength" = _ })
 defaultUserData :: forall a b r. Lens { "defaultUserData" :: a | r } { "defaultUserData" :: b | r } a b
 defaultUserData = lens _."defaultUserData" (_ { "defaultUserData" = _ })
 
-locale :: forall a b r. Lens { "locale" :: a | r } { "locale" :: b | r } a b
-locale = lens _."locale" (_ { "locale" = _ })
-
 registerMask :: forall a b r. Lens { "registerMask" :: a | r } { "registerMask" :: b | r } a b
 registerMask = lens _."registerMask" (_ { "registerMask" = _ })
 
@@ -225,6 +222,9 @@ _ResetPassword = prism (const ResetPassword) unwrap
   unwrap ResetPassword = Right unit
   unwrap y = Left y
 
+locale :: forall a b r. Lens { "locale" :: a | r } { "locale" :: b | r } a b
+locale = lens _."locale" (_ { "locale" = _ })
+
 resetEmail :: forall a b r. Lens { "resetEmail" :: a | r } { "resetEmail" :: b | r } a b
 resetEmail = lens _."resetEmail" (_ { "resetEmail" = _ })
 
@@ -245,6 +245,9 @@ _SetNewPassword = prism SetNewPassword unwrap
   where
   unwrap (SetNewPassword x) = Right x
   unwrap y = Left y
+
+token :: forall a b r. Lens { "token" :: a | r } { "token" :: b | r } a b
+token = lens _."token" (_ { "token" = _ })
 
 setpwdPassword :: forall a b r. Lens { "setpwdPassword" :: a | r } { "setpwdPassword" :: b | r } a b
 setpwdPassword = lens _."setpwdPassword" (_ { "setpwdPassword" = _ })

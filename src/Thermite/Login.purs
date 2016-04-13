@@ -63,51 +63,9 @@ render dispatch props state _
     LoginScreen -> container $ view T._render props.loginMask (dispatch <<< SubLoginAction) { locale: props.locale } state.loginState []
     RegisterScreen -> container $ view T._render props.registerMask (dispatch <<< SubRegisterAction) { locale: props.locale } state.regState []
     ResetPasswordScreen -> container $ view T._render props.resetPasswordMask (dispatch <<< SubResetAction) { locale: props.locale } state.resetPasswordState []
-    -- SetNewPasswordScreen token -> container (renderSetNewPasswordScreen token)
-
+    SetNewPasswordScreen token -> container $ view T._render props.setNewPasswordMask (dispatch <<< SubSetNewPasswordAction) { locale: props.locale, token: token } state.setNewPasswordState []
     where
       container es = [ R.div [ RP.className "login-container" ] es ]
-
-      {-
-      renderSetNewPasswordScreen token = concat
-        [ textinput' true validateAlways Nothing props.locale.password (setNewPasswordState <<< setpwdPassword)
-        , textinput' true (hoistValidator setNewPasswordState $ validateRepeatPassword setpwdPassword setpwdRepeatPassword) (Just $ SetNewPassword token) props.locale.repeatPassword (setNewPasswordState <<< setpwdRepeatPassword)
-        , [ button
-              (validateRepeatPassword setpwdPassword setpwdRepeatPassword state.setNewPasswordState)
-              state.setNewPasswordState.setpwdLoading
-              props.locale.setPassword
-              "login-button-register"
-              dispatch
-              (SetNewPassword token)
-          ]
-        , if state.setNewPasswordState.setpwdShowSuccessMessage
-            then [ R.div [ RP.className "login-register-success" ] [ R.text $ props.locale.newPasswordSetSuccessfully ] ]
-            else []
-        ]
-
-      textinput' :: Boolean
-                 -> Validator (State uid userdata err)
-                 -> Maybe (Action uid userdata err)
-                 -> String
-                 -> Lens (State uid userdata err) (State uid userdata err) String String
-                 -> _
-      textinput' pwd validate onEnter text lens =
-        [ R.input
-          [ RP.onChange \e -> dispatch $ TextChanged lens ((unsafeCoerce e).target.value)
-          , RP.onKeyDown \e -> case onEnter of
-              Just action | e.keyCode == 13 -> dispatch action
-              _ -> return unit
-          , RP.value (state ^. lens)
-          , RP.placeholder text
-          , if validate state
-               then RP.className "login-input"
-               else RP.className "login-input login-input-error"
-          , if pwd then RP._type "password" else RP._type ""
-          ] []
-        ]
-
-      textinput = textinput' false validateAlways Nothing
-    -}
 
 redirectToRoot :: forall eff. Eff (dom :: DOM.DOM, webStorage :: WebStorage.WebStorage | eff) Unit
 redirectToRoot = do

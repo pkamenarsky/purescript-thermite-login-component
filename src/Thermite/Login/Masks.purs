@@ -193,3 +193,30 @@ resetPasswordMask = T.simpleSpec performAction render
     where
     textinput' = renderTextinput' dispatch props state ResetTextChanged
     textinput = renderTextinput dispatch props state ResetTextChanged
+
+--------------------------------------------------------------------------------
+
+setNewPasswordPasswordMask :: forall userdata err custom eff. T.Spec eff SetNewPasswordState (SetNewPasswordConfig custom) SetNewPasswordAction
+setNewPasswordPasswordMask = T.simpleSpec performAction render
+  where
+  performAction (SetNewPasswordTextChanged f) props state = modify f
+  performAction (SetNewPassword _) props state = return unit
+
+  render dispatch props state _ = concat
+    [ textinput' true validateAlways Nothing props.locale.password setpwdPassword
+    , textinput' true (validateRepeatPassword setpwdPassword setpwdRepeatPassword) (Just $ SetNewPassword props.token) props.locale.repeatPassword setpwdRepeatPassword
+    , [ button
+          (validateRepeatPassword setpwdPassword setpwdRepeatPassword state)
+          state.setpwdLoading
+          props.locale.setPassword
+          "login-button-register"
+          dispatch
+          (SetNewPassword props.token)
+      ]
+    , if state.setpwdShowSuccessMessage
+        then [ R.div [ RP.className "login-register-success" ] [ R.text $ props.locale.newPasswordSetSuccessfully ] ]
+        else []
+    ]
+    where
+    textinput' = renderTextinput' dispatch props state SetNewPasswordTextChanged
+    textinput = renderTextinput dispatch props state SetNewPasswordTextChanged
