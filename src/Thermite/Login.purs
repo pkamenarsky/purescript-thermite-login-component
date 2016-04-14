@@ -144,7 +144,7 @@ performAction = handler
 
     handler (SubRegisterAction Register) props state = when (not $ state.regState.regLoading) $ do
       r <- lift $ sendSync props $ RPC.CreateUser
-             state.regState.regName
+             state.regState.regEmail
              state.regState.regEmail
              state.regState.regPassword
              state.regState.regUserData

@@ -65,12 +65,13 @@ renderTextinput' :: forall st props action.
                 -> st
                 -> ((st -> st) -> action)
                 -> Boolean
+                -> Boolean
                 -> Validator st
                 -> Maybe action
                 -> String
                 -> LensP st String
                 -> _
-renderTextinput' dispatch props state onChange pwd validate onEnter text lens =
+renderTextinput' dispatch props state onChange autofocus pwd validate onEnter text lens =
   [ R.input
     [ RP.onChange \e -> dispatch $ onChange (set lens ((unsafeCoerce e).target.value))
     , RP.onKeyDown \e -> case onEnter of
@@ -82,10 +83,11 @@ renderTextinput' dispatch props state onChange pwd validate onEnter text lens =
          then RP.className "login-input"
          else RP.className "login-input login-input-error"
     , if pwd then RP._type "password" else RP._type ""
+    , RP.autoFocus autofocus
     ] []
   ]
 
-renderTextinput dispatch props state onChange = renderTextinput' dispatch props state onChange false validateAlways Nothing
+renderTextinput dispatch props state onChange = renderTextinput' dispatch props state onChange false false validateAlways Nothing
 
 --------------------------------------------------------------------------------
 
@@ -98,8 +100,8 @@ registerMask = T.simpleSpec performAction render
   render dispatch props state _ = concat
     [ textinput props.locale.name regName
     , textinput props.locale.email regEmail
-    , textinput' true validateAlways Nothing props.locale.password regPassword
-    , textinput' true (validateRepeatPassword regPassword regRepeatPassword) (Just Register) props.locale.repeatPassword regRepeatPassword
+    , textinput' false true validateAlways Nothing props.locale.password regPassword
+    , textinput' false true (validateRepeatPassword regPassword regRepeatPassword) (Just Register) props.locale.repeatPassword regRepeatPassword
     , [ button
           ( allValid state
             $ [ validateEmail
@@ -134,7 +136,7 @@ loginMask = T.simpleSpec performAction render
 
   render dispatch props state _ = concat
     [ textinput props.locale.name loginName
-    , textinput' true validateAlways (if state.loginLoading then Nothing else Just Login) props.locale.password loginPassword
+    , textinput' false true validateAlways (if state.loginLoading then Nothing else Just Login) props.locale.password loginPassword
     , [ button
           true
           state.loginLoading
@@ -182,7 +184,7 @@ resetPasswordMask = T.simpleSpec performAction render
   performAction ResetPassword props state = return unit
 
   render dispatch props state _ = concat
-    [ textinput' false validateAlways (Just ResetPassword) props.locale.email resetEmail
+    [ textinput' false false validateAlways (Just ResetPassword) props.locale.email resetEmail
     , [ button
           true
           state.resetLoading
@@ -208,8 +210,8 @@ setNewPasswordMask = T.simpleSpec performAction render
   performAction (SetNewPassword _) props state = return unit
 
   render dispatch props state _ = concat
-    [ textinput' true validateAlways Nothing props.locale.password setpwdPassword
-    , textinput' true (validateRepeatPassword setpwdPassword setpwdRepeatPassword) (Just $ SetNewPassword props.token) props.locale.repeatPassword setpwdRepeatPassword
+    [ textinput' false true validateAlways Nothing props.locale.password setpwdPassword
+    , textinput' false true (validateRepeatPassword setpwdPassword setpwdRepeatPassword) (Just $ SetNewPassword props.token) props.locale.repeatPassword setpwdRepeatPassword
     , [ button
           (validateRepeatPassword setpwdPassword setpwdRepeatPassword state)
           state.setpwdLoading
