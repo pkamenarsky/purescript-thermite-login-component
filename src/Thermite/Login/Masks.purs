@@ -137,14 +137,7 @@ loginMask = T.simpleSpec performAction render
   render dispatch props state _ = concat
     [ textinput props.locale.name loginName
     , textinput' false true validateAlways (if state.loginLoading then Nothing else Just Login) props.locale.password loginPassword
-    , [ button
-          true
-          state.loginLoading
-          props.locale.login
-          "login-button-login"
-          dispatch
-          Login
-      , R.div
+    , [ R.div
         [ RP.className "login-text-container" ]
         [ R.div
           [ RP.onClick \_ -> dispatch (LoginScreenChanged ResetPasswordScreen)
@@ -157,6 +150,13 @@ loginMask = T.simpleSpec performAction render
           ]
           [ R.text props.locale.register ]
         ]
+      , button
+          true
+          state.loginLoading
+          props.locale.login
+          "login-button-login"
+          dispatch
+          Login
       , R.div [ RP.className "login-divider" ] []
       , R.div
         [ RP.onClick \_ -> dispatch LoginWithFacebook
