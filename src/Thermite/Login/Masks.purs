@@ -13,6 +13,8 @@ import Data.Maybe
 import Data.String (null)
 import Data.Tuple
 
+import Text.Email.Validate as Email
+
 import React as R
 import React.DOM as R
 import React.DOM.Props as RP
@@ -34,8 +36,8 @@ allValid st = and <<< map ($ st)
 validateAlways :: forall st. Validator st
 validateAlways _ = true
 
-validateEmail :: forall userdata err. Validator (RegisterState userdata err)
-validateEmail st = not null st.regEmail
+validateEmail :: forall st. LensP st String -> Validator st
+validateEmail email st = not (null $ st ^. email) && Email.isValid (st ^. email)
 
 validateRepeatPassword :: forall st.
                           LensP st String
@@ -104,7 +106,7 @@ registerMask = T.simpleSpec performAction render
     , textinput' false true (validateRepeatPassword regPassword regRepeatPassword) (Just Register) props.locale.repeatPassword regRepeatPassword
     , [ button
           ( allValid state
-            $ [ validateEmail
+            $ [ validateEmail regEmail
               , validateRepeatPassword regPassword regRepeatPassword
               ]
           )
@@ -144,11 +146,13 @@ loginMask = T.simpleSpec performAction render
           , RP.className "login-text-forgot-password"
           ]
           [ R.text props.locale.forgotPassword ]
+        {-
         , R.div
           [ RP.onClick \_ -> dispatch (LoginScreenChanged RegisterScreen)
           , RP.className "login-text-register"
           ]
           [ R.text props.locale.register ]
+        -}
         ]
       , button
           true
@@ -158,11 +162,13 @@ loginMask = T.simpleSpec performAction render
           dispatch
           Login
       , R.div [ RP.className "login-divider" ] []
+      {-
       , R.div
         [ RP.onClick \_ -> dispatch LoginWithFacebook
         , RP.className "login-button-facebook"
         ]
         [ R.text props.locale.loginWithFacebook ]
+      -}
       ]
     , if state.loginError
          then [ R.div
