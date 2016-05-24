@@ -86,6 +86,7 @@ renderTextinput' dispatch props state onChange autofocus pwd validate onEnter te
          else RP.className "login-input login-input-error"
     , if pwd then RP._type "password" else RP._type ""
     , RP.autoFocus autofocus
+    , RP.autoComplete "off"
     ] []
   ]
 
@@ -146,13 +147,11 @@ loginMask = T.simpleSpec performAction render
           , RP.className "login-text-forgot-password"
           ]
           [ R.text props.locale.forgotPassword ]
-        {-
         , R.div
           [ RP.onClick \_ -> dispatch (LoginScreenChanged RegisterScreen)
           , RP.className "login-text-register"
           ]
           [ R.text props.locale.register ]
-        -}
         ]
       , button
           true
