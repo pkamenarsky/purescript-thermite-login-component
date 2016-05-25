@@ -87,6 +87,9 @@ renderTextinput' dispatch props state onChange autofocus pwd validate onEnter te
     , if pwd then RP._type "password" else RP._type ""
     , RP.autoFocus autofocus
     , RP.autoComplete "off"
+    , RP.unsafeMkProps "autoCapitalize" "none"
+    , RP.unsafeMkProps "autoCorrect" "off"
+    , RP.unsafeMkProps "spellCheck" "false"
     ] []
   ]
 
